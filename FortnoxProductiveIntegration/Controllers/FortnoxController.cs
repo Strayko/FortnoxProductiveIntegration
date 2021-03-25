@@ -12,7 +12,7 @@ namespace FortnoxProductiveIntegration.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class TestController : ControllerBase
+    public class FortnoxController : ControllerBase
     {
         [HttpGet]
         public async Task<IActionResult> Get()
