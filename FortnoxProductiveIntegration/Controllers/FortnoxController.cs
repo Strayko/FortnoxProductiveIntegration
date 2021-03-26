@@ -73,7 +73,7 @@ namespace FortnoxProductiveIntegration.Controllers
             };
 
             // await customerConnector.CreateAsync(customer);
-            // await invoiceConnector.CreateAsync(invoice);
+            await invoiceConnector.CreateAsync(invoice);
 
             return Ok(new {success = "Customer and Invoice created successfully"});
         }
