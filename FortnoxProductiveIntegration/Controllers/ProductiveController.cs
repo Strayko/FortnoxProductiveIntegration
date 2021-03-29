@@ -16,17 +16,17 @@ namespace FortnoxProductiveIntegration.Controllers
     [Route("api/[controller]")]
     public class ProductiveController : ControllerBase
     {
-        private readonly IProductiveServices _productiveServices;
+        private readonly IProductiveService _productiveService;
 
-        public ProductiveController(IProductiveServices productiveServices)
+        public ProductiveController(IProductiveService productiveService)
         {
-            _productiveServices = productiveServices;
+            _productiveService = productiveService;
         }
         
         [HttpGet]
         public async Task<JObject> Get()
         {
-            var invoiceData = await _productiveServices.GetInvoiceData();
+            var invoiceData = await _productiveService.GetInvoiceData();
 
             var data = invoiceData["data"];
             Console.WriteLine(data);

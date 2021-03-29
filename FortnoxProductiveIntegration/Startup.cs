@@ -29,7 +29,8 @@ namespace FortnoxProductiveIntegration
         {
             services.AddControllers();
 
-            services.AddScoped<IProductiveServices, ProductiveService>();
+            services.AddScoped<IProductiveService, ProductiveService>();
+            services.AddScoped<IFortnoxService, FortnoxService>();
 
             services.AddControllers().AddNewtonsoftJson(options =>
                 options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore);

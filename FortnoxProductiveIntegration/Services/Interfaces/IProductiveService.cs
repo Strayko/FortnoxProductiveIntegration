@@ -3,8 +3,9 @@ using Newtonsoft.Json.Linq;
 
 namespace FortnoxProductiveIntegration.Services.Interfaces
 {
-    public interface IProductiveServices
+    public interface IProductiveService
     {
         Task<JObject> GetInvoiceData();
+        Task<JObject> GetCustomerData(string customerId);
     }
 }
