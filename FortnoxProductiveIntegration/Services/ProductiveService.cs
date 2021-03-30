@@ -30,23 +30,32 @@ namespace FortnoxProductiveIntegration.Services
             var invoiceUrl = "invoices";
             var requestMessage = HttpRequestMessage(invoiceUrl);
 
-            var responseMessage = await _httpClient.SendAsync(requestMessage);
-            var invoicesJsonString = await responseMessage.Content.ReadAsStringAsync();
-            var invoicesJsonObj = JObject.Parse(invoicesJsonString);
-            
-            return invoicesJsonObj;
+            return await HttpResponseAndReturnToJsonObj(requestMessage);
         }
 
         public async Task<JObject> GetCustomerData(string customerId)
         {
             var contactUrl = $"contact_entries/{customerId}";
             var requestMessage = HttpRequestMessage(contactUrl);
-            
+
+            return await HttpResponseAndReturnToJsonObj(requestMessage);
+        }
+
+        public async Task<JObject> GetLineItemsDataFromInvoice(string invoiceId)
+        {
+            var lineItemsFilterUrl = $"line_items?filter[invoice_id]={invoiceId}";
+            var requestMessage = HttpRequestMessage(lineItemsFilterUrl);
+
+            return await HttpResponseAndReturnToJsonObj(requestMessage);
+        }
+        
+        private async Task<JObject> HttpResponseAndReturnToJsonObj(HttpRequestMessage requestMessage)
+        {
             var responseMessage = await _httpClient.SendAsync(requestMessage);
-            var customerJsonString = await responseMessage.Content.ReadAsStringAsync();
-            var customerJsonObj = JObject.Parse(customerJsonString);
-            
-            return customerJsonObj;
+            var jsonString = await responseMessage.Content.ReadAsStringAsync();
+            var jsonObj = JObject.Parse(jsonString);
+
+            return jsonObj;
         }
 
         private static HttpRequestMessage HttpRequestMessage(string path)

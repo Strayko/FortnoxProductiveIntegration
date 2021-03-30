@@ -31,17 +31,12 @@ namespace FortnoxProductiveIntegration.Controllers
             var invoicesRelationshipData = await _productiveService.GetInvoiceData();
             var invoices = invoicesRelationshipData["data"];
            
-            foreach (var item in invoices)
+            foreach (var invoice in invoices)
             {
-                var invoice = item["attributes"];
-                var customerId = (string) item["relationships"]?["bill_to"]?["data"]?["id"];
-                var getCustomerFromApi = await _productiveService.GetCustomerData(customerId);
-                var customer = getCustomerFromApi["data"];
-
-                await _fortnoxService.CreateInvoice(invoice, customer);
+                await _fortnoxService.CreateInvoice(invoice);
             }
 
-            return Ok(new {success = "Customer and Invoice created successfully"});
+            return Ok(new {success = "Customers and Invoices created successfully"});
         }
 
         

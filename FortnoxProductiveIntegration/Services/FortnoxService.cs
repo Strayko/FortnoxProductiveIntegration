@@ -12,22 +12,46 @@ namespace FortnoxProductiveIntegration.Services
 {
     public class FortnoxService : IFortnoxService
     {
-        public async Task<long?> CreateInvoice(JToken invoiceJObject, JToken customerJObject)
+        private readonly IProductiveService _productiveService;
+
+        public FortnoxService(IProductiveService productiveService)
         {
-            var customerId = (string)customerJObject["id"];
-            var customerAttributes = customerJObject["attributes"];
+            _productiveService = productiveService;
+        }
+
+        public async Task<long?> CreateInvoice(JToken invoiceJObject)
+        {
+
+            var price = (string)invoiceJObject["attributes"]?["amount"];
+            var de = String.Format("{0:}", 20000);
             
+            
+            Console.WriteLine(de);
+            
+            var createdAt = invoiceJObject["attributes"]?["created_at"];
+            var createdAtToString = Convert.ToString(createdAt);
+            var createdAtToDateTime = Convert.ToDateTime(createdAtToString);
+            
+            var customerId = (string) invoiceJObject["relationships"]?["bill_to"]?["data"]?["id"];
+            var getCustomer = await _productiveService.GetCustomerData(customerId);
+            
+            var invoiceId = (string) invoiceJObject["id"];
+            var getLineItems = await _productiveService.GetLineItemsDataFromInvoice(invoiceId);
+            
+            var contact = getCustomer["data"]?["attributes"];
+            var lineItems = getLineItems["data"];
+
             Console.WriteLine(invoiceJObject);
-            Console.WriteLine(customerJObject);
+            
             var customerConnector = new CustomerConnector()
             {
-                AccessToken = "500ec245-710a-43a1-842a-0531c07d5754",
+                AccessToken = "c58e5d93-432f-4d7b-a677-f6c1e23621c3",
                 ClientSecret = "WTGWLoVtqW"
             };
 
             var invoiceConnector = new InvoiceConnector()
             {
-                AccessToken = "500ec245-710a-43a1-842a-0531c07d5754",
+                AccessToken = "c58e5d93-432f-4d7b-a677-f6c1e23621c3",
                 ClientSecret = "WTGWLoVtqW"
             };
 
@@ -43,24 +67,36 @@ namespace FortnoxProductiveIntegration.Services
             var customer = new Customer()
             {
                 CustomerNumber = customerId,
-                Name = (string)customerAttributes["name"],
-                Email = (string)customerAttributes["email"],
-                Phone1 = (string)customerAttributes["phone"],
-                Address1 = (string)customerAttributes["address"],
-                City = (string)customerAttributes["city"],
-                DeliveryPhone1 = (string)customerAttributes["phone"],
+                Name = (string)contact?["name"],
+                Email = (string)contact?["email"],
+                Phone1 = (string)contact?["phone"],
+                Address1 = (string)contact?["address"],
+                City = (string)contact?["city"],
+                DeliveryPhone1 = (string)contact?["phone"],
                 Active = true,
                 Type = CustomerType.Company,
             };
 
-            var invoiceRows = new List<InvoiceRow>()
+            var invoiceRows = new List<InvoiceRow>();
+
+            foreach (var item in lineItems)
             {
-                new InvoiceRow {Discount = 1, Price = 22, VAT = 0, Unit = "1", Description = "asd", DeliveredQuantity = 1}
-            };
+                invoiceRows.Add(new InvoiceRow
+                {
+                    Unit = (string)item["attributes"]?["unit_id"],
+                    Discount = 0, 
+                    Price = (decimal)item["attributes"]?["amount"], 
+                    VAT = 0,
+                    Description = (string)item["attributes"]?["description"], 
+                    DeliveredQuantity = 1
+                });
+            }
+
+            Console.WriteLine(invoiceRows);
 
             var invoice = new Invoice()
             {
-                DocumentNumber = (int)invoiceJObject["number"],
+                DocumentNumber = (long)invoiceJObject["attributes"]?["number"],
                 Address1 = "address1",
                 Address2 = "address2",
                 Currency = "SEK",
@@ -72,12 +108,12 @@ namespace FortnoxProductiveIntegration.Services
                 PaymentWay = PaymentWay.Card,
                 CurrencyRate = 1,
                 DeliveryCity = "delivery city",
-                InvoiceDate = DateTime.Parse((string)invoiceJObject["created_at"]),
+                InvoiceDate = createdAtToDateTime,
                 InvoiceType = InvoiceType.CashInvoice,
                 InvoiceRows = new List<InvoiceRow>(invoiceRows)
             };
 
-            // await customerConnector.CreateAsync(customer);
+            await customerConnector.CreateAsync(customer);
             var status = await invoiceConnector.CreateAsync(invoice);
             
             return status.DocumentNumber;

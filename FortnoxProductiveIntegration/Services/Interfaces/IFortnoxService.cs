@@ -5,6 +5,6 @@ namespace FortnoxProductiveIntegration.Services.Interfaces
 {
     public interface IFortnoxService
     {
-        Task<long?> CreateInvoice(JToken invoiceJObject, JToken customerJObject);
+        Task<long?> CreateInvoice(JToken invoiceJObject);
     }
 }
