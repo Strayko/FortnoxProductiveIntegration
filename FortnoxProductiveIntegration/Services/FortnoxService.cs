@@ -21,13 +21,6 @@ namespace FortnoxProductiveIntegration.Services
 
         public async Task<long?> CreateInvoice(JToken invoiceJObject)
         {
-
-            var price = (string)invoiceJObject["attributes"]?["amount"];
-            var de = String.Format("{0:}", 20000);
-            
-            
-            Console.WriteLine(de);
-            
             var createdAt = invoiceJObject["attributes"]?["created_at"];
             var createdAtToString = Convert.ToString(createdAt);
             var createdAtToDateTime = Convert.ToDateTime(createdAtToString);
@@ -85,7 +78,7 @@ namespace FortnoxProductiveIntegration.Services
                 {
                     Unit = (string)item["attributes"]?["unit_id"],
                     Discount = 0, 
-                    Price = (decimal)item["attributes"]?["amount"], 
+                    Price = FormatAndParseToDecimal(item["attributes"]?["amount"]),
                     VAT = 0,
                     Description = (string)item["attributes"]?["description"], 
                     DeliveredQuantity = 1
@@ -118,6 +111,13 @@ namespace FortnoxProductiveIntegration.Services
             
             return status.DocumentNumber;
             
+        }
+        
+        private static decimal FormatAndParseToDecimal(JToken price)
+        {
+            var decimalFormat = string.Format("{0:#.00}", Convert.ToDecimal(price) / 100);
+            var decimalParse = decimal.Parse(decimalFormat);
+            return decimalParse;
         }
     }
 }
