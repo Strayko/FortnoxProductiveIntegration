@@ -49,6 +49,37 @@ namespace FortnoxProductiveIntegration.Services
             return await HttpResponseMessage(requestMessage);
         }
         
+        public JArray DailyInvoicesFilter(JToken invoicesData)
+        {
+            var currentDay = CurrentDay();
+            JArray dailyInvoices = new JArray();
+            foreach (var item in invoicesData)
+            {
+                var dayFromInvoice = GetCurrentDaySubstring(item);
+                if (currentDay == dayFromInvoice)
+                {
+                    dailyInvoices.Add(item);
+                }
+            }
+
+            return dailyInvoices;
+        }
+        
+        private static string CurrentDay()
+        {
+            var currentDayInt = DateTime.Now.Day;
+            var currentDay = Convert.ToString(currentDayInt);
+            return currentDay;
+        }
+        
+        private static string GetCurrentDaySubstring(JToken invoice)
+        {
+            var createdAt = (string)invoice["attributes"]?["created_at"];
+            var substring = createdAt.Substring(0, createdAt.LastIndexOf("/", StringComparison.Ordinal));
+            var currentDayString = substring.Substring(substring.IndexOf("/", StringComparison.Ordinal) + 1);
+            return currentDayString;
+        }
+        
         private async Task<JObject> HttpResponseMessage(HttpRequestMessage requestMessage)
         {
             var responseMessage = await _httpClient.SendAsync(requestMessage);

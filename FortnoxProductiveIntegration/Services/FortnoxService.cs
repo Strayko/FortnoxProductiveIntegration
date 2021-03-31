@@ -68,7 +68,7 @@ namespace FortnoxProductiveIntegration.Services
             
             return status.DocumentNumber;
         }
-
+        
         private async Task<JToken> GetLineItems(JToken invoiceIdJToken)
         {
             var invoiceId = (string)invoiceIdJToken;
@@ -104,7 +104,7 @@ namespace FortnoxProductiveIntegration.Services
             var customerId = (string) invoiceJObject["relationships"]?["bill_to"]?["data"]?["id"];
             return customerId;
         }
-        
+
         // var invoiceSearch = new InvoiceSearch()
         // {
         //     CustomerNumber = "9"
