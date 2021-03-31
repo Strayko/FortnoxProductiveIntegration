@@ -29,6 +29,21 @@ namespace FortnoxProductiveIntegration.Controllers
         public async Task<IActionResult> Get()
         {
             var invoicesRelationshipData = await _productiveService.GetInvoiceData();
+
+            var invoicesWithCurrentDay = invoicesRelationshipData["data"];
+            var currentDayInt = DateTime.Now.Day;
+            var currentDayString = Convert.ToString(currentDayInt);
+            
+            
+            foreach (var item in invoicesWithCurrentDay)
+            {
+                var day = GetCurrentDaySubstring(item);
+                Console.WriteLine(day);
+            }
+
+            
+            
+            Console.WriteLine(invoicesRelationshipData);
             var invoices = invoicesRelationshipData["data"];
            
             foreach (var invoice in invoices)
@@ -39,6 +54,12 @@ namespace FortnoxProductiveIntegration.Controllers
             return Ok(new {success = "Customers and Invoices created successfully"});
         }
 
-        
+        private static string GetCurrentDaySubstring(JToken invoice)
+        {
+            var createdAt = (string)invoice["attributes"]?["created_at"];
+            var substring = createdAt.Substring(0, createdAt.LastIndexOf("/", StringComparison.Ordinal));
+            var currentDayString = substring.Substring(substring.IndexOf("/", StringComparison.Ordinal) + 1);
+            return currentDayString;
+        }
     }
 }

@@ -1,9 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Threading.Tasks;
 using Fortnox.SDK.Connectors;
 using Fortnox.SDK.Entities;
+using Fortnox.SDK.Exceptions;
+using FortnoxProductiveIntegration.Connectors;
 using FortnoxProductiveIntegration.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json.Linq;
@@ -13,80 +16,32 @@ namespace FortnoxProductiveIntegration.Services
     public class FortnoxService : IFortnoxService
     {
         private readonly IProductiveService _productiveService;
+        private readonly IMappingService _mappingService;
 
-        public FortnoxService(IProductiveService productiveService)
+        public FortnoxService(IProductiveService productiveService, IMappingService mappingService)
         {
             _productiveService = productiveService;
+            _mappingService = mappingService;
         }
 
         public async Task<long?> CreateInvoice(JToken invoiceJObject)
         {
-            var createdAt = invoiceJObject["attributes"]?["created_at"];
-            var createdAtToString = Convert.ToString(createdAt);
-            var createdAtToDateTime = Convert.ToDateTime(createdAtToString);
             
-            var customerId = (string) invoiceJObject["relationships"]?["bill_to"]?["data"]?["id"];
-            var getCustomer = await _productiveService.GetCustomerData(customerId);
+            var customerId = ConvertIdJTokenToString(invoiceJObject);
             
-            var invoiceId = (string) invoiceJObject["id"];
-            var getLineItems = await _productiveService.GetLineItemsDataFromInvoice(invoiceId);
+            var customerConnector = FortnoxConnector.Customer();
+            var invoiceConnector = FortnoxConnector.Invoice();
             
-            var contact = getCustomer["data"]?["attributes"];
-            var lineItems = getLineItems["data"];
+            var productiveCustomer = await _productiveService.GetCustomerData(customerId);
+            var fortnoxCustomer = await FortnoxCustomerExists(customerConnector, customerId);
 
-            Console.WriteLine(invoiceJObject);
-            
-            var customerConnector = new CustomerConnector()
-            {
-                AccessToken = "c58e5d93-432f-4d7b-a677-f6c1e23621c3",
-                ClientSecret = "WTGWLoVtqW"
-            };
+            var customer = fortnoxCustomer ?? _mappingService.CreateFortnoxCustomer(productiveCustomer);
 
-            var invoiceConnector = new InvoiceConnector()
-            {
-                AccessToken = "c58e5d93-432f-4d7b-a677-f6c1e23621c3",
-                ClientSecret = "WTGWLoVtqW"
-            };
+            var productiveLineItem = await GetLineItems(invoiceJObject["id"]);
 
-            // var invoiceSearch = new InvoiceSearch()
-            // {
-            //     CustomerNumber = "9"
-            // };
+            var invoiceRows = productiveLineItem.Select(item => _mappingService.CreateFortnoxInvoiceRow(item)).ToList();
 
-            // var invoices = await invoiceConnector.FindAsync(invoiceSearch);
-            // Console.WriteLine(invoices);
-
-
-            var customer = new Customer()
-            {
-                CustomerNumber = customerId,
-                Name = (string)contact?["name"],
-                Email = (string)contact?["email"],
-                Phone1 = (string)contact?["phone"],
-                Address1 = (string)contact?["address"],
-                City = (string)contact?["city"],
-                DeliveryPhone1 = (string)contact?["phone"],
-                Active = true,
-                Type = CustomerType.Company,
-            };
-
-            var invoiceRows = new List<InvoiceRow>();
-
-            foreach (var item in lineItems)
-            {
-                invoiceRows.Add(new InvoiceRow
-                {
-                    Unit = (string)item["attributes"]?["unit_id"],
-                    Discount = 0, 
-                    Price = FormatAndParseToDecimal(item["attributes"]?["amount"]),
-                    VAT = 0,
-                    Description = (string)item["attributes"]?["description"], 
-                    DeliveredQuantity = 1
-                });
-            }
-
-            Console.WriteLine(invoiceRows);
-
+            var createdAtToDateTime = ConvertStringToDateTimeType(invoiceJObject["attributes"]?["created_at"]);
             var invoice = new Invoice()
             {
                 DocumentNumber = (long)invoiceJObject["attributes"]?["number"],
@@ -106,18 +61,56 @@ namespace FortnoxProductiveIntegration.Services
                 InvoiceRows = new List<InvoiceRow>(invoiceRows)
             };
 
-            await customerConnector.CreateAsync(customer);
+            if (fortnoxCustomer == null)
+                await customerConnector.CreateAsync(customer);
+
             var status = await invoiceConnector.CreateAsync(invoice);
             
             return status.DocumentNumber;
-            
+        }
+
+        private async Task<JToken> GetLineItems(JToken invoiceIdJToken)
+        {
+            var invoiceId = (string)invoiceIdJToken;
+            var getLineItems = await _productiveService.GetLineItemsDataFromInvoice(invoiceId);
+            var lineItems = getLineItems["data"];
+            return lineItems;
+        }
+
+        private static DateTime ConvertStringToDateTimeType(JToken createdAt)
+        {
+            var createdAtToString = Convert.ToString(createdAt);
+            var createdAtToDateTime = Convert.ToDateTime(createdAtToString);
+            return createdAtToDateTime;
+        }
+
+        private static async Task<Customer> FortnoxCustomerExists(CustomerConnector customerConnector, string customerId)
+        {
+            Customer fortnoxCustomer = null;
+            try
+            {
+                fortnoxCustomer = await customerConnector.GetAsync(customerId);
+            }
+            catch (FortnoxApiException e)
+            {
+                Console.WriteLine($"{e.StatusCode}");
+            }
+
+            return fortnoxCustomer;
+        }
+
+        private static string ConvertIdJTokenToString(JToken invoiceJObject)
+        {
+            var customerId = (string) invoiceJObject["relationships"]?["bill_to"]?["data"]?["id"];
+            return customerId;
         }
         
-        private static decimal FormatAndParseToDecimal(JToken price)
-        {
-            var decimalFormat = string.Format("{0:#.00}", Convert.ToDecimal(price) / 100);
-            var decimalParse = decimal.Parse(decimalFormat);
-            return decimalParse;
-        }
+        // var invoiceSearch = new InvoiceSearch()
+        // {
+        //     CustomerNumber = "9"
+        // };
+
+        // var invoices = await invoiceConnector.FindAsync(invoiceSearch);
+        // Console.WriteLine(invoices);
     }
 }
