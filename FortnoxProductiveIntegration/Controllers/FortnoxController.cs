@@ -1,11 +1,18 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Fortnox.SDK;
 using Fortnox.SDK.Connectors;
 using Fortnox.SDK.Entities;
+using Fortnox.SDK.Exceptions;
 using Fortnox.SDK.Search;
+using FortnoxProductiveIntegration.Connectors;
 using FortnoxProductiveIntegration.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json.Linq;
@@ -24,19 +31,26 @@ namespace FortnoxProductiveIntegration.Controllers
             _fortnoxService = fortnoxService;
             _productiveService = productiveService;
         }
-        
+
         [HttpGet]
-        public async Task<IActionResult> Get()
+        [Route("invoices/create")]
+        public async Task<IActionResult> CreateInvoice()
         {
             var invoicesData = await _productiveService.GetInvoiceData();
             var dailyInvoices = _productiveService.DailyInvoicesFilter(invoicesData["data"]);
-          
-            foreach (var invoice in dailyInvoices)
+            var newInvoices = await _productiveService.NewInvoices(dailyInvoices);
+            
+            if (newInvoices.Count > 0)
             {
-                await _fortnoxService.CreateInvoice(invoice);
+                foreach (var invoice in newInvoices)
+                {
+                    await _fortnoxService.CreateInvoice(invoice);
+                }
+
+                return Ok(new {success = "Invoices created successfully!"});
             }
 
-            return Ok(new {success = "Customers and Invoices created successfully"});
+            return Ok(new {success = "No new invoices!"});
         }
     }
 }

@@ -9,5 +9,6 @@ namespace FortnoxProductiveIntegration.Services.Interfaces
         Task<JObject> GetCustomerData(string customerId);
         Task<JObject> GetLineItemsDataFromInvoice(string invoiceId);
         JArray DailyInvoicesFilter(JToken invoicesData);
+        Task<JArray> NewInvoices(JToken dailyInvoices);
     }
 }

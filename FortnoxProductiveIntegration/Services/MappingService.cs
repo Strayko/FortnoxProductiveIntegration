@@ -30,10 +30,10 @@ namespace FortnoxProductiveIntegration.Services
             var lineItem = new InvoiceRow
             {
                 Unit = (string)item["attributes"]?["unit_id"],
-                Discount = 0, 
+                Discount = (decimal?) (item["attributes"]?["discount"] ?? 0),
                 Price = FormatAndParseToDecimal(item["attributes"]?["amount"]),
                 VAT = 0,
-                Description = (string)item["attributes"]?["description"], 
+                Description = (string)item["attributes"]?["description"],
                 DeliveredQuantity = 1
             };
 

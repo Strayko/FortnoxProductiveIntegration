@@ -2,6 +2,9 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Text;
 using System.Threading.Tasks;
 using Fortnox.SDK.Connectors;
 using Fortnox.SDK.Entities;
@@ -17,16 +20,33 @@ namespace FortnoxProductiveIntegration.Services
     {
         private readonly IProductiveService _productiveService;
         private readonly IMappingService _mappingService;
+        private readonly HttpClient _httpClient;
 
         public FortnoxService(IProductiveService productiveService, IMappingService mappingService)
         {
             _productiveService = productiveService;
             _mappingService = mappingService;
+            
+            _httpClient = new HttpClient
+            {
+                BaseAddress = new Uri("https://api.fortnox.se/3/"),
+                DefaultRequestHeaders = 
+                { 
+                    Accept = { MediaTypeWithQualityHeaderValue.Parse("application/json") }
+                }
+            };
+        }
+
+        public async Task<JObject> GetInvoiceData()
+        {
+            var invoiceUrl = "invoices/?filter=fullypaid";
+            var requestMessage = HttpRequestMessage(invoiceUrl);
+
+            return await HttpResponseMessage(requestMessage);
         }
 
         public async Task<long?> CreateInvoice(JToken invoiceJObject)
         {
-            
             var customerId = ConvertIdJTokenToString(invoiceJObject);
             
             var customerConnector = FortnoxConnector.Customer();
@@ -45,17 +65,15 @@ namespace FortnoxProductiveIntegration.Services
             var invoice = new Invoice()
             {
                 DocumentNumber = (long)invoiceJObject["attributes"]?["number"],
-                Address1 = "address1",
-                Address2 = "address2",
-                Currency = "SEK",
+                Currency = (string)invoiceJObject["attributes"]?["currency"],
                 CurrencyUnit = 1,
-                City = "city",
+                City = customer.City,
                 Language = Language.English,
                 CustomerName = customer.Name,
                 CustomerNumber = customer.CustomerNumber,
                 PaymentWay = PaymentWay.Card,
                 CurrencyRate = 1,
-                DeliveryCity = "delivery city",
+                DeliveryCity = customer.DeliveryCity,
                 InvoiceDate = createdAtToDateTime,
                 InvoiceType = InvoiceType.CashInvoice,
                 InvoiceRows = new List<InvoiceRow>(invoiceRows)
@@ -65,7 +83,7 @@ namespace FortnoxProductiveIntegration.Services
                 await customerConnector.CreateAsync(customer);
 
             var status = await invoiceConnector.CreateAsync(invoice);
-            
+
             return status.DocumentNumber;
         }
         
@@ -103,6 +121,29 @@ namespace FortnoxProductiveIntegration.Services
         {
             var customerId = (string) invoiceJObject["relationships"]?["bill_to"]?["data"]?["id"];
             return customerId;
+        }
+        
+        private static HttpRequestMessage HttpRequestMessage(string path)
+        {
+            var requestMessage = new HttpRequestMessage(HttpMethod.Get, path)
+            {
+                Content = new StringContent(string.Empty, Encoding.UTF8, "application/json"),
+                Headers =
+                {
+                    {"Access-Token", FortnoxCredentials.AccessToken},
+                    {"Client-Secret", FortnoxCredentials.ClientSecret}
+                }
+            };
+            return requestMessage;
+        }
+        
+        private async Task<JObject> HttpResponseMessage(HttpRequestMessage requestMessage)
+        {
+            var responseMessage = await _httpClient.SendAsync(requestMessage);
+            var jsonString = await responseMessage.Content.ReadAsStringAsync();
+            var jsonObj = JObject.Parse(jsonString);
+
+            return jsonObj;
         }
 
         // var invoiceSearch = new InvoiceSearch()

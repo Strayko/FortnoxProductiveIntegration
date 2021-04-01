@@ -11,23 +11,25 @@ namespace FortnoxProductiveIntegration.Controllers
     public class ProductiveController : ControllerBase
     {
         private readonly IProductiveService _productiveService;
+        private readonly IFortnoxService _fortnoxService;
 
-        public ProductiveController(IProductiveService productiveService)
+        public ProductiveController(IProductiveService productiveService, IFortnoxService fortnoxService)
         {
             _productiveService = productiveService;
+            _fortnoxService = fortnoxService;
         }
         
         [HttpGet]
-        public async Task<JObject> Get()
+        [Route("invoices")]
+        public async Task<IActionResult> Invoices()
         {
-            var invoiceData = await _productiveService.GetInvoiceData();
-
-            var data = invoiceData["data"];
-            Console.WriteLine(data);
+            var invoicesData = await _fortnoxService.GetInvoiceData();
+            var invoices = invoicesData["Invoices"];
+            Console.WriteLine(invoices);
             
             
             
-            return invoiceData;
+            return Ok(new {success = "Invoices"});
         }
     }
 }

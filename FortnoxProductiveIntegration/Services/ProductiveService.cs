@@ -3,6 +3,9 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
+using Fortnox.SDK.Entities;
+using Fortnox.SDK.Exceptions;
+using FortnoxProductiveIntegration.Connectors;
 using FortnoxProductiveIntegration.Services.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Http;
@@ -48,6 +51,32 @@ namespace FortnoxProductiveIntegration.Services
 
             return await HttpResponseMessage(requestMessage);
         }
+
+        public async Task<JArray> NewInvoices(JToken dailyInvoices)
+        {
+            var invoiceConnector = FortnoxConnector.Invoice();
+            JArray newInvoices = new JArray();
+            foreach (var invoice in dailyInvoices)
+            {
+                Invoice exist = null;
+                try
+                {
+                    var invoiceNumber =  (long)invoice["attributes"]?["number"];
+                    exist = await invoiceConnector.GetAsync(invoiceNumber);
+                }
+                catch (FortnoxApiException e)
+                {
+                    Console.WriteLine($"{e.StatusCode}");
+                }
+
+                if (exist == null)
+                {
+                    newInvoices.Add(invoice);
+                }
+            }
+
+            return newInvoices;
+        }
         
         public JArray DailyInvoicesFilter(JToken invoicesData)
         {
@@ -68,7 +97,7 @@ namespace FortnoxProductiveIntegration.Services
         private static string CurrentDay()
         {
             var currentDayInt = DateTime.Now.Day;
-            var currentDay = Convert.ToString(currentDayInt);
+            var currentDay = $"{currentDayInt:00}";
             return currentDay;
         }
         
@@ -93,7 +122,7 @@ namespace FortnoxProductiveIntegration.Services
         {
             var requestMessage = new HttpRequestMessage(HttpMethod.Get, path)
             {
-                Content = new StringContent(string.Empty, Encoding.UTF8, "application/vnd.api+json"),
+                Content = new StringContent(string.Empty, Encoding.UTF8, "application/json"),
                 Headers =
                 {
                     {"X-Auth-Token", "52ac03fa-b7e6-4d34-98d8-72676ebaafa1"},
