@@ -28,18 +28,29 @@ namespace FortnoxProductiveIntegration.Services
                 }
             };
         }
-        public async Task<JObject> GetInvoiceData()
+        public async Task<JObject> GetUnpaidInvoiceData()
         {
-            var invoiceUrl = "invoices";
-            var requestMessage = HttpRequestMessage(invoiceUrl);
+            var invoiceUrl = "invoices?filter[status]=2";
+            var httpMethod = HttpMethod.Get;
+            var requestMessage = HttpRequestMessage(httpMethod, invoiceUrl);
 
             return await HttpResponseMessage(requestMessage);
         }
 
+        public async Task UpdateInvoice(long invoiceId)
+        {
+            var updateUrl = $"invoice/{invoiceId}";
+            var httpMethod = HttpMethod.Patch;
+            var requestMessage = HttpRequestMessage(httpMethod, updateUrl);
+            
+            
+        }
+        
         public async Task<JObject> GetCustomerData(string customerId)
         {
             var contactUrl = $"contact_entries/{customerId}";
-            var requestMessage = HttpRequestMessage(contactUrl);
+            var httpMethod = HttpMethod.Get;
+            var requestMessage = HttpRequestMessage(httpMethod, contactUrl);
 
             return await HttpResponseMessage(requestMessage);
         }
@@ -47,7 +58,8 @@ namespace FortnoxProductiveIntegration.Services
         public async Task<JObject> GetLineItemsDataFromInvoice(string invoiceId)
         {
             var lineItemsFilterUrl = $"line_items?filter[invoice_id]={invoiceId}";
-            var requestMessage = HttpRequestMessage(lineItemsFilterUrl);
+            var httpMethod = HttpMethod.Get;
+            var requestMessage = HttpRequestMessage(httpMethod, lineItemsFilterUrl);
 
             return await HttpResponseMessage(requestMessage);
         }
@@ -118,11 +130,11 @@ namespace FortnoxProductiveIntegration.Services
             return jsonObj;
         }
 
-        private static HttpRequestMessage HttpRequestMessage(string path)
+        private static HttpRequestMessage HttpRequestMessage(HttpMethod httpMethod, string path)
         {
-            var requestMessage = new HttpRequestMessage(HttpMethod.Get, path)
+            var requestMessage = new HttpRequestMessage(httpMethod, path)
             {
-                Content = new StringContent(string.Empty, Encoding.UTF8, "application/json"),
+                Content = new StringContent(string.Empty, Encoding.UTF8, "application/vnd.api+json"),
                 Headers =
                 {
                     {"X-Auth-Token", "52ac03fa-b7e6-4d34-98d8-72676ebaafa1"},

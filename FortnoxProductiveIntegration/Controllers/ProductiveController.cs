@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
+using FortnoxProductiveIntegration.Connectors;
 using FortnoxProductiveIntegration.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json.Linq;
@@ -23,9 +24,26 @@ namespace FortnoxProductiveIntegration.Controllers
         [Route("invoices")]
         public async Task<IActionResult> Invoices()
         {
-            var invoicesData = await _fortnoxService.GetInvoiceData();
-            var invoices = invoicesData["Invoices"];
-            Console.WriteLine(invoices);
+            var unpaidProductiveInvoices = await _productiveService.GetUnpaidInvoiceData();
+            Console.WriteLine(unpaidProductiveInvoices);
+            var productiveInvoices = unpaidProductiveInvoices["data"];
+
+            foreach (var invoice in productiveInvoices)
+            {
+                var invoiceId = (long)invoice["attributes"]?["number"];
+
+                var fortnoxInvoiceConnector = FortnoxConnector.Invoice();
+                var fortnoxInvoice = fortnoxInvoiceConnector.Get(35);
+
+                if (fortnoxInvoice.FinalPayDate != null)
+                {
+                    
+                }
+                
+                
+            }
+
+            Console.WriteLine(productiveInvoices);
             
             
             

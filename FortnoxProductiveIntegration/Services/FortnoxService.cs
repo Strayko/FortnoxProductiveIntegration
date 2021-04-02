@@ -20,29 +20,11 @@ namespace FortnoxProductiveIntegration.Services
     {
         private readonly IProductiveService _productiveService;
         private readonly IMappingService _mappingService;
-        private readonly HttpClient _httpClient;
 
         public FortnoxService(IProductiveService productiveService, IMappingService mappingService)
         {
             _productiveService = productiveService;
             _mappingService = mappingService;
-            
-            _httpClient = new HttpClient
-            {
-                BaseAddress = new Uri("https://api.fortnox.se/3/"),
-                DefaultRequestHeaders = 
-                { 
-                    Accept = { MediaTypeWithQualityHeaderValue.Parse("application/json") }
-                }
-            };
-        }
-
-        public async Task<JObject> GetInvoiceData()
-        {
-            var invoiceUrl = "invoices/?filter=fullypaid";
-            var requestMessage = HttpRequestMessage(invoiceUrl);
-
-            return await HttpResponseMessage(requestMessage);
         }
 
         public async Task<long?> CreateInvoice(JToken invoiceJObject)
@@ -62,6 +44,7 @@ namespace FortnoxProductiveIntegration.Services
             var invoiceRows = productiveLineItem.Select(item => _mappingService.CreateFortnoxInvoiceRow(item)).ToList();
 
             var createdAtToDateTime = ConvertStringToDateTimeType(invoiceJObject["attributes"]?["created_at"]);
+            var dueDateToDateTime = ConvertStringToDateTimeType(invoiceJObject["attributes"]?["pay_on"]);
             var invoice = new Invoice()
             {
                 DocumentNumber = (long)invoiceJObject["attributes"]?["number"],
@@ -75,6 +58,7 @@ namespace FortnoxProductiveIntegration.Services
                 CurrencyRate = 1,
                 DeliveryCity = customer.DeliveryCity,
                 InvoiceDate = createdAtToDateTime,
+                DueDate = dueDateToDateTime,
                 InvoiceType = InvoiceType.CashInvoice,
                 InvoiceRows = new List<InvoiceRow>(invoiceRows)
             };
@@ -135,15 +119,6 @@ namespace FortnoxProductiveIntegration.Services
                 }
             };
             return requestMessage;
-        }
-        
-        private async Task<JObject> HttpResponseMessage(HttpRequestMessage requestMessage)
-        {
-            var responseMessage = await _httpClient.SendAsync(requestMessage);
-            var jsonString = await responseMessage.Content.ReadAsStringAsync();
-            var jsonObj = JObject.Parse(jsonString);
-
-            return jsonObj;
         }
 
         // var invoiceSearch = new InvoiceSearch()
