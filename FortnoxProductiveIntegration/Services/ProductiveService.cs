@@ -16,6 +16,7 @@ namespace FortnoxProductiveIntegration.Services
     public class ProductiveService : IProductiveService
     {
         private readonly HttpClient _httpClient;
+        private const string EmptyContent = ""; 
         
         public ProductiveService()
         {
@@ -32,25 +33,34 @@ namespace FortnoxProductiveIntegration.Services
         {
             var invoiceUrl = "invoices?filter[status]=2";
             var httpMethod = HttpMethod.Get;
-            var requestMessage = HttpRequestMessage(httpMethod, invoiceUrl);
+            var requestMessage = HttpRequestMessage(httpMethod, invoiceUrl, EmptyContent);
 
             return await HttpResponseMessage(requestMessage);
         }
 
-        public async Task UpdateInvoice(long invoiceId)
+        public async Task<JObject> SentOn(string invoiceId, string contentSentOn)
         {
-            var updateUrl = $"invoice/{invoiceId}";
+            var updateUrl = $"invoices/{invoiceId}";
             var httpMethod = HttpMethod.Patch;
-            var requestMessage = HttpRequestMessage(httpMethod, updateUrl);
-            
-            
+            var requestMessage = HttpRequestMessage(httpMethod, updateUrl, contentSentOn);
+
+            return await HttpResponseMessage(requestMessage);
+        }
+
+        public async Task<JObject> Payments(string contentPayments)
+        {
+            var paymentsUrl = $"payments";
+            var httpMethod = HttpMethod.Post;
+            var requestMessage = HttpRequestMessage(httpMethod, paymentsUrl, contentPayments);
+
+            return await HttpResponseMessage(requestMessage);
         }
         
         public async Task<JObject> GetCustomerData(string customerId)
         {
             var contactUrl = $"contact_entries/{customerId}";
             var httpMethod = HttpMethod.Get;
-            var requestMessage = HttpRequestMessage(httpMethod, contactUrl);
+            var requestMessage = HttpRequestMessage(httpMethod, contactUrl, EmptyContent);
 
             return await HttpResponseMessage(requestMessage);
         }
@@ -59,7 +69,7 @@ namespace FortnoxProductiveIntegration.Services
         {
             var lineItemsFilterUrl = $"line_items?filter[invoice_id]={invoiceId}";
             var httpMethod = HttpMethod.Get;
-            var requestMessage = HttpRequestMessage(httpMethod, lineItemsFilterUrl);
+            var requestMessage = HttpRequestMessage(httpMethod, lineItemsFilterUrl, EmptyContent);
 
             return await HttpResponseMessage(requestMessage);
         }
@@ -130,11 +140,11 @@ namespace FortnoxProductiveIntegration.Services
             return jsonObj;
         }
 
-        private static HttpRequestMessage HttpRequestMessage(HttpMethod httpMethod, string path)
+        private static HttpRequestMessage HttpRequestMessage(HttpMethod httpMethod, string path, string content)
         {
             var requestMessage = new HttpRequestMessage(httpMethod, path)
             {
-                Content = new StringContent(string.Empty, Encoding.UTF8, "application/vnd.api+json"),
+                Content = new StringContent(content, Encoding.UTF8, "application/vnd.api+json"),
                 Headers =
                 {
                     {"X-Auth-Token", "52ac03fa-b7e6-4d34-98d8-72676ebaafa1"},

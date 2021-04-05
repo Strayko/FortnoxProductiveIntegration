@@ -25,26 +25,53 @@ namespace FortnoxProductiveIntegration.Controllers
         public async Task<IActionResult> Invoices()
         {
             var unpaidProductiveInvoices = await _productiveService.GetUnpaidInvoiceData();
-            Console.WriteLine(unpaidProductiveInvoices);
             var productiveInvoices = unpaidProductiveInvoices["data"];
+
+
 
             foreach (var invoice in productiveInvoices)
             {
-                var invoiceId = (long)invoice["attributes"]?["number"];
-
+                var invoiceIdNumber = (long)invoice["attributes"]?["number"];
                 var fortnoxInvoiceConnector = FortnoxConnector.Invoice();
-                var fortnoxInvoice = fortnoxInvoiceConnector.Get(35);
-
+                var fortnoxInvoice = fortnoxInvoiceConnector.Get(invoiceIdNumber);
+                
                 if (fortnoxInvoice.FinalPayDate != null)
                 {
-                    
-                }
-                
-                
-            }
+                    var date = fortnoxInvoice.FinalPayDate.Value.ToString("yyy-MM-dd");
+                    var invoiceIdFromSystem = (string)invoice["id"];
+                    var amount = (string)invoice["attributes"]?["amount"];
 
-            Console.WriteLine(productiveInvoices);
-            
+                    var contentSentOn = $@"
+                        {{
+                          'data': {{
+                            'type': 'invoices',
+                            'attributes': {{
+                                'sent_on': '{date}'
+                            }}
+                        }}
+                    }}".Replace('\'', '"');
+
+                    var contentPayments = $@"
+                        {{
+                           'data': {{
+                              'type': 'payments',
+                              'attributes': {{
+                                'amount': {amount},
+                                'paid_on': '{date}'
+                              }},
+                              'relationships': {{
+                                'invoice': {{
+                                  'type': 'invoices',
+                                  'id': '{invoiceIdFromSystem}'
+                                }}
+                              }}
+                            }}
+                    }}".Replace('\'', '"');
+                    
+                    await _productiveService.SentOn(invoiceIdFromSystem, contentSentOn);
+
+                }
+            }
             
             
             return Ok(new {success = "Invoices"});
