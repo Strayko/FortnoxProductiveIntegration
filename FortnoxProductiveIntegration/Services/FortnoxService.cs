@@ -11,6 +11,7 @@ using FortnoxProductiveIntegration.Connectors;
 using FortnoxProductiveIntegration.JsonFormat;
 using FortnoxProductiveIntegration.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 
 namespace FortnoxProductiveIntegration.Services
@@ -19,11 +20,13 @@ namespace FortnoxProductiveIntegration.Services
     {
         private readonly IProductiveService _productiveService;
         private readonly IMappingService _mappingService;
+        private readonly ILogger<FortnoxService> _log;
 
-        public FortnoxService(IProductiveService productiveService, IMappingService mappingService)
+        public FortnoxService(IProductiveService productiveService, IMappingService mappingService, ILogger<FortnoxService> log)
         {
             _productiveService = productiveService;
             _mappingService = mappingService;
+            _log = log;
         }
 
         public async Task<long?> CreateInvoice(JToken invoiceJObject)
@@ -70,6 +73,8 @@ namespace FortnoxProductiveIntegration.Services
 
             var status = await invoiceConnector.CreateAsync(invoice);
 
+            _log.LogInformation($"The invoice under id {status.DocumentNumber} is stored.");
+            
             return status.DocumentNumber;
         }
         
