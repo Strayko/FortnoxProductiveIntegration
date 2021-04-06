@@ -147,8 +147,8 @@ namespace FortnoxProductiveIntegration.Services
                 Content = new StringContent(content, Encoding.UTF8, "application/vnd.api+json"),
                 Headers =
                 {
-                    {"X-Auth-Token", "52ac03fa-b7e6-4d34-98d8-72676ebaafa1"},
-                    {"X-Organization-Id", "14923"}
+                    {"X-Auth-Token", "f3dbdb72-9919-4726-8441-8cd41b58e119"},
+                    {"X-Organization-Id", "15066"}
                 }
             };
             return requestMessage;

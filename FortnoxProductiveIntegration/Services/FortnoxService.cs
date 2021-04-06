@@ -2,14 +2,13 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
-using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Text;
 using System.Threading.Tasks;
 using Fortnox.SDK.Connectors;
 using Fortnox.SDK.Entities;
 using Fortnox.SDK.Exceptions;
 using FortnoxProductiveIntegration.Connectors;
+using FortnoxProductiveIntegration.JsonFormat;
 using FortnoxProductiveIntegration.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json.Linq;
@@ -43,8 +42,10 @@ namespace FortnoxProductiveIntegration.Services
 
             var invoiceRows = productiveLineItem.Select(item => _mappingService.CreateFortnoxInvoiceRow(item)).ToList();
 
-            var createdAtToDateTime = ConvertStringToDateTimeType(invoiceJObject["attributes"]?["created_at"]);
-            var dueDateToDateTime = ConvertStringToDateTimeType(invoiceJObject["attributes"]?["pay_on"]);
+            var createdAt = ConvertStringToDateTimeType(invoiceJObject["attributes"]?["created_at"]);
+            var dueDate = ConvertStringToDateTimeType(invoiceJObject["attributes"]?["pay_on"]);
+            var deliveryDate = ConvertStringToDateTimeType(invoiceJObject["attributes"]?["delivery_on"]);
+            
             var invoice = new Invoice()
             {
                 DocumentNumber = (long)invoiceJObject["attributes"]?["number"],
@@ -57,8 +58,9 @@ namespace FortnoxProductiveIntegration.Services
                 PaymentWay = PaymentWay.Card,
                 CurrencyRate = 1,
                 DeliveryCity = customer.DeliveryCity,
-                InvoiceDate = createdAtToDateTime,
-                DueDate = dueDateToDateTime,
+                InvoiceDate = createdAt,
+                DueDate = dueDate,
+                DeliveryDate = deliveryDate,
                 InvoiceType = InvoiceType.CashInvoice,
                 InvoiceRows = new List<InvoiceRow>(invoiceRows)
             };
@@ -71,6 +73,44 @@ namespace FortnoxProductiveIntegration.Services
             return status.DocumentNumber;
         }
         
+        public Invoice GetFortnoxInvoice(JToken invoice)
+        {
+            var invoiceIdNumber = (long) invoice["attributes"]?["number"];
+            var fortnoxInvoiceConnector = FortnoxConnector.Invoice();
+            Invoice fortnoxInvoice = null;
+            try
+            {
+                fortnoxInvoice = fortnoxInvoiceConnector.Get(invoiceIdNumber);
+            }
+            catch (Exception e)
+            {
+                // ignored
+            }
+            
+            return fortnoxInvoice;
+        }
+        
+        public async Task CheckPaidInvoices(JToken productiveInvoices)
+        {
+            foreach (var invoice in productiveInvoices)
+            {
+                var fortnoxInvoice = GetFortnoxInvoice(invoice);
+
+                if (fortnoxInvoice.FinalPayDate != null)
+                {
+                    var date = fortnoxInvoice.FinalPayDate.Value.ToString("yyy-MM-dd");
+                    var invoiceIdFromSystem = (string) invoice["id"];
+                    var amount = (string) invoice["attributes"]?["amount"];
+
+                    var contentSentOn = JsonData.ContentSentOn(date);
+                    var contentPayments = JsonData.ContentPayments(amount, date, invoiceIdFromSystem);
+
+                    await _productiveService.SentOn(invoiceIdFromSystem, contentSentOn);
+                    await _productiveService.Payments(contentPayments);
+                }
+            }
+        }
+        
         private async Task<JToken> GetLineItems(JToken invoiceIdJToken)
         {
             var invoiceId = (string)invoiceIdJToken;
@@ -79,9 +119,10 @@ namespace FortnoxProductiveIntegration.Services
             return lineItems;
         }
 
-        private static DateTime ConvertStringToDateTimeType(JToken createdAt)
+        private static DateTime? ConvertStringToDateTimeType(JToken dateTime)
         {
-            var createdAtToString = Convert.ToString(createdAt);
+            var createdAtToString = Convert.ToString(dateTime);
+            if (createdAtToString == "") return null;
             var createdAtToDateTime = Convert.ToDateTime(createdAtToString);
             return createdAtToDateTime;
         }
@@ -93,9 +134,9 @@ namespace FortnoxProductiveIntegration.Services
             {
                 fortnoxCustomer = await customerConnector.GetAsync(customerId);
             }
-            catch (FortnoxApiException e)
+            catch (Exception e)
             {
-                Console.WriteLine($"{e.StatusCode}");
+                // ignored
             }
 
             return fortnoxCustomer;
@@ -105,20 +146,6 @@ namespace FortnoxProductiveIntegration.Services
         {
             var customerId = (string) invoiceJObject["relationships"]?["bill_to"]?["data"]?["id"];
             return customerId;
-        }
-        
-        private static HttpRequestMessage HttpRequestMessage(string path)
-        {
-            var requestMessage = new HttpRequestMessage(HttpMethod.Get, path)
-            {
-                Content = new StringContent(string.Empty, Encoding.UTF8, "application/json"),
-                Headers =
-                {
-                    {"Access-Token", FortnoxCredentials.AccessToken},
-                    {"Client-Secret", FortnoxCredentials.ClientSecret}
-                }
-            };
-            return requestMessage;
         }
 
         // var invoiceSearch = new InvoiceSearch()
