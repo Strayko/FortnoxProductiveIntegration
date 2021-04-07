@@ -9,17 +9,20 @@ using FortnoxProductiveIntegration.Connectors;
 using FortnoxProductiveIntegration.Services.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Http;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 
 namespace FortnoxProductiveIntegration.Services
 {
     public class ProductiveService : IProductiveService
     {
+        private readonly ILogger<ProductiveService> _logger;
         private readonly HttpClient _httpClient;
         private const string EmptyContent = ""; 
         
-        public ProductiveService()
+        public ProductiveService(ILogger<ProductiveService> logger)
         {
+            _logger = logger;
             _httpClient = new HttpClient
             {
                 BaseAddress = new Uri("https://api.productive.io/api/v2/"),
@@ -35,7 +38,10 @@ namespace FortnoxProductiveIntegration.Services
             var httpMethod = HttpMethod.Get;
             var requestMessage = HttpRequestMessage(httpMethod, invoiceUrl, EmptyContent);
 
-            return await HttpResponseMessage(requestMessage);
+            var invoices = await HttpResponseMessage(requestMessage);
+            
+            _logger.LogInformation($"(Productive) Number of unpaid invoices: ({invoices["meta"]?["total_count"]})");
+            return invoices;
         }
 
         public async Task<JObject> SentOn(string invoiceId, string contentSentOn)
@@ -44,7 +50,10 @@ namespace FortnoxProductiveIntegration.Services
             var httpMethod = HttpMethod.Patch;
             var requestMessage = HttpRequestMessage(httpMethod, updateUrl, contentSentOn);
 
-            return await HttpResponseMessage(requestMessage);
+            var sentOn = await HttpResponseMessage(requestMessage);
+            
+            _logger.LogInformation($"(Productive) Invoice with id: ({sentOn["data"]?["attributes"]?["number"]}) sent on date: ({sentOn["data"]?["attributes"]?["sent_on"]})");
+            return sentOn;
         }
 
         public async Task<JObject> Payments(string contentPayments)
@@ -53,7 +62,10 @@ namespace FortnoxProductiveIntegration.Services
             var httpMethod = HttpMethod.Post;
             var requestMessage = HttpRequestMessage(httpMethod, paymentsUrl, contentPayments);
 
-            return await HttpResponseMessage(requestMessage);
+            var payments = await HttpResponseMessage(requestMessage);
+          
+            _logger.LogInformation($"(Productive) And paid on: ({payments["data"]?["attributes"]?["paid_on"]})");
+            return payments;
         }
         
         public async Task<JObject> GetCustomerData(string customerId)
@@ -62,7 +74,10 @@ namespace FortnoxProductiveIntegration.Services
             var httpMethod = HttpMethod.Get;
             var requestMessage = HttpRequestMessage(httpMethod, contactUrl, EmptyContent);
 
-            return await HttpResponseMessage(requestMessage);
+            var customer = await HttpResponseMessage(requestMessage);
+            
+            _logger.LogInformation($"(Productive) Get customer data: ({customer["data"]?["attributes"]?["name"]})");
+            return customer;
         }
 
         public async Task<JObject> GetLineItemsDataFromInvoice(string invoiceId)
@@ -71,7 +86,10 @@ namespace FortnoxProductiveIntegration.Services
             var httpMethod = HttpMethod.Get;
             var requestMessage = HttpRequestMessage(httpMethod, lineItemsFilterUrl, EmptyContent);
 
-            return await HttpResponseMessage(requestMessage);
+            var lineItems = await HttpResponseMessage(requestMessage);
+            
+            _logger.LogInformation($"Current number of line items: ({lineItems["meta"]?["total_count"]})");
+            return lineItems;
         }
 
         public async Task<JArray> NewInvoices(JToken dailyInvoices)
@@ -86,9 +104,9 @@ namespace FortnoxProductiveIntegration.Services
                     var invoiceNumber =  (long)invoice["attributes"]?["number"];
                     exist = await invoiceConnector.GetAsync(invoiceNumber);
                 }
-                catch (FortnoxApiException e)
+                catch (Exception)
                 {
-                    Console.WriteLine($"{e.StatusCode}");
+                    // ignored
                 }
 
                 if (exist == null)
@@ -97,6 +115,7 @@ namespace FortnoxProductiveIntegration.Services
                 }
             }
 
+            _logger.LogInformation($"(Productive) Number of new invoices: ({newInvoices.Count})");
             return newInvoices;
         }
         

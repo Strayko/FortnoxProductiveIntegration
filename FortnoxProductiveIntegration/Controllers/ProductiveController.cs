@@ -1,11 +1,7 @@
-﻿using System;
-using System.Threading.Tasks;
-using Fortnox.SDK.Entities;
-using FortnoxProductiveIntegration.Connectors;
-using FortnoxProductiveIntegration.JsonFormat;
+﻿using System.Threading.Tasks;
 using FortnoxProductiveIntegration.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
-using Newtonsoft.Json.Linq;
+using Microsoft.Extensions.Logging;
 
 namespace FortnoxProductiveIntegration.Controllers
 {
@@ -15,23 +11,28 @@ namespace FortnoxProductiveIntegration.Controllers
     {
         private readonly IProductiveService _productiveService;
         private readonly IFortnoxService _fortnoxService;
+        private readonly ILogger<ProductiveController> _logger;
 
-        public ProductiveController(IProductiveService productiveService, IFortnoxService fortnoxService)
+        public ProductiveController(
+            IProductiveService productiveService, 
+            IFortnoxService fortnoxService, 
+            ILogger<ProductiveController> logger)
         {
             _productiveService = productiveService;
             _fortnoxService = fortnoxService;
+            _logger = logger;
         }
         
         [HttpGet]
         [Route("invoices")]
-        public async Task<IActionResult> Invoices()
+        public async Task Invoices()
         {
             var unpaidProductiveInvoices = await _productiveService.GetUnpaidInvoiceData();
             var productiveInvoices = unpaidProductiveInvoices["data"];
             
-            await _fortnoxService.CheckPaidInvoices(productiveInvoices);
+            var paidInvoices = await _fortnoxService.CheckPaidInvoices(productiveInvoices);
             
-            return Ok(new {success = "Successfully paid invoices!"});
+            _logger.LogInformation($"Number of new invoices paid: ({paidInvoices})");
         }
     }
 }

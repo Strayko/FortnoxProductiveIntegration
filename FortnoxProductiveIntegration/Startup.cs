@@ -51,7 +51,7 @@ namespace FortnoxProductiveIntegration
 
             app.UseAuthorization();
 
-            loggerFactory.AddFile("Logs/fortnoxProductive-{Date}.txt");
+            loggerFactory.AddFile("Logs/FortnoxProductive-{Date}.txt");
 
             app.UseEndpoints(endpoints => { endpoints.MapControllers(); });
         }

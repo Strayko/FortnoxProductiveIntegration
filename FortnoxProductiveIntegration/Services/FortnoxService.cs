@@ -20,13 +20,13 @@ namespace FortnoxProductiveIntegration.Services
     {
         private readonly IProductiveService _productiveService;
         private readonly IMappingService _mappingService;
-        private readonly ILogger<FortnoxService> _log;
+        private static ILogger<FortnoxService> _logger;
 
-        public FortnoxService(IProductiveService productiveService, IMappingService mappingService, ILogger<FortnoxService> log)
+        public FortnoxService(IProductiveService productiveService, IMappingService mappingService, ILogger<FortnoxService> logger)
         {
             _productiveService = productiveService;
             _mappingService = mappingService;
-            _log = log;
+            _logger = logger;
         }
 
         public async Task<long?> CreateInvoice(JToken invoiceJObject)
@@ -40,6 +40,8 @@ namespace FortnoxProductiveIntegration.Services
             var fortnoxCustomer = await FortnoxCustomerExists(customerConnector, customerId);
 
             var customer = fortnoxCustomer ?? _mappingService.CreateFortnoxCustomer(productiveCustomer);
+
+            Console.WriteLine(customer);
 
             var productiveLineItem = await GetLineItems(invoiceJObject["id"]);
 
@@ -73,8 +75,9 @@ namespace FortnoxProductiveIntegration.Services
 
             var status = await invoiceConnector.CreateAsync(invoice);
 
-            _log.LogInformation($"The invoice under id {status.DocumentNumber} is stored.");
-            
+            _logger.LogInformation($"(Fortnox) Customer with name: ({customer.Name}) and id: ({customer.CustomerNumber}) preparing and invoice");
+            _logger.LogInformation($"(Fortnox) The invoice under id: ({status.DocumentNumber}) is stored");
+
             return status.DocumentNumber;
         }
         
@@ -87,16 +90,18 @@ namespace FortnoxProductiveIntegration.Services
             {
                 fortnoxInvoice = fortnoxInvoiceConnector.Get(invoiceIdNumber);
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 // ignored
             }
             
+            _logger.LogInformation($"(Fortnox) Get invoice with id: ({fortnoxInvoice.DocumentNumber}) and customer name: ({fortnoxInvoice.CustomerName}) )");
             return fortnoxInvoice;
         }
         
-        public async Task CheckPaidInvoices(JToken productiveInvoices)
+        public async Task<int> CheckPaidInvoices(JToken productiveInvoices)
         {
+            var paidInvoices = 0;
             foreach (var invoice in productiveInvoices)
             {
                 var fortnoxInvoice = GetFortnoxInvoice(invoice);
@@ -112,8 +117,11 @@ namespace FortnoxProductiveIntegration.Services
 
                     await _productiveService.SentOn(invoiceIdFromSystem, contentSentOn);
                     await _productiveService.Payments(contentPayments);
+                    paidInvoices++;
                 }
             }
+
+            return paidInvoices;
         }
         
         private async Task<JToken> GetLineItems(JToken invoiceIdJToken)
@@ -139,11 +147,12 @@ namespace FortnoxProductiveIntegration.Services
             {
                 fortnoxCustomer = await customerConnector.GetAsync(customerId);
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 // ignored
             }
 
+            _logger.LogInformation($"(Fortnox) User exists with id: ({customerId}) ? User: ({fortnoxCustomer})");
             return fortnoxCustomer;
         }
 

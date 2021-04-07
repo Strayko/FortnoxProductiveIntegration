@@ -1,21 +1,7 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.IO;
-using System.Net.Http;
-using System.Net.Http.Headers;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-using Fortnox.SDK;
-using Fortnox.SDK.Connectors;
-using Fortnox.SDK.Entities;
-using Fortnox.SDK.Exceptions;
-using Fortnox.SDK.Search;
-using FortnoxProductiveIntegration.Connectors;
+﻿using System.Threading.Tasks;
 using FortnoxProductiveIntegration.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
-using Newtonsoft.Json.Linq;
+using Microsoft.Extensions.Logging;
 
 namespace FortnoxProductiveIntegration.Controllers
 {
@@ -25,16 +11,21 @@ namespace FortnoxProductiveIntegration.Controllers
     {
         private readonly IFortnoxService _fortnoxService;
         private readonly IProductiveService _productiveService;
+        private readonly ILogger<FortnoxController> _logger;
 
-        public FortnoxController(IFortnoxService fortnoxService, IProductiveService productiveService)
+        public FortnoxController(
+            IFortnoxService fortnoxService, 
+            IProductiveService productiveService, 
+            ILogger<FortnoxController> logger)
         {
             _fortnoxService = fortnoxService;
             _productiveService = productiveService;
+            _logger = logger;
         }
 
         [HttpGet]
         [Route("invoices/create")]
-        public async Task<IActionResult> CreateInvoice()
+        public async Task CreateInvoice()
         {
             var invoicesData = await _productiveService.GetUnpaidInvoiceData();
             var dailyInvoices = _productiveService.DailyInvoicesFilter(invoicesData["data"]);
@@ -46,11 +37,10 @@ namespace FortnoxProductiveIntegration.Controllers
                 {
                     await _fortnoxService.CreateInvoice(invoice);
                 }
-
-                return Ok(new {success = "Invoices created successfully!"});
+                _logger.LogInformation($"Number of new invoices created: ({newInvoices.Count})");
             }
 
-            return Ok(new {success = "No new invoices!"});
+            _logger.LogInformation($"No new invoices created");
         }
     }
 }

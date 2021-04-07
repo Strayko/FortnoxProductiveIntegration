@@ -8,6 +8,6 @@ namespace FortnoxProductiveIntegration.Services.Interfaces
     {
         Task<long?> CreateInvoice(JToken invoiceJObject);
         Invoice GetFortnoxInvoice(JToken invoice);
-        Task CheckPaidInvoices(JToken productiveInvoices);
+        Task<int> CheckPaidInvoices(JToken productiveInvoices);
     }
 }
