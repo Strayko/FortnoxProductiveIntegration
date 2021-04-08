@@ -31,18 +31,17 @@ namespace FortnoxProductiveIntegration.Services
 
         public async Task<long?> CreateInvoice(JToken invoiceJObject)
         {
-            var customerId = ConvertIdJTokenToString(invoiceJObject);
+            var companyId = ConvertIdJTokenToString(invoiceJObject);
             
             var customerConnector = FortnoxConnector.Customer();
             var invoiceConnector = FortnoxConnector.Invoice();
             
-            var productiveCustomer = await _productiveService.GetCustomerData(customerId);
-            var fortnoxCustomer = await FortnoxCustomerExists(customerConnector, customerId);
+            var productiveCompany = await _productiveService.GetCompanyData(companyId);
 
-            var customer = fortnoxCustomer ?? _mappingService.CreateFortnoxCustomer(productiveCustomer);
+            var fortnoxCustomer = await FortnoxCustomerExists(customerConnector, companyId);
 
-            Console.WriteLine(customer);
-
+            var customer = fortnoxCustomer ?? _mappingService.CreateFortnoxCustomer(productiveCompany);
+            
             var productiveLineItem = await GetLineItems(invoiceJObject["id"]);
 
             var invoiceRows = productiveLineItem.Select(item => _mappingService.CreateFortnoxInvoiceRow(item)).ToList();
@@ -84,6 +83,7 @@ namespace FortnoxProductiveIntegration.Services
         public Invoice GetFortnoxInvoice(JToken invoice)
         {
             var invoiceIdNumber = (long) invoice["attributes"]?["number"];
+
             var fortnoxInvoiceConnector = FortnoxConnector.Invoice();
             Invoice fortnoxInvoice = null;
             try
@@ -158,7 +158,7 @@ namespace FortnoxProductiveIntegration.Services
 
         private static string ConvertIdJTokenToString(JToken invoiceJObject)
         {
-            var customerId = (string) invoiceJObject["relationships"]?["bill_to"]?["data"]?["id"];
+            var customerId = (string) invoiceJObject["relationships"]?["company"]?["data"]?["id"];
             return customerId;
         }
 

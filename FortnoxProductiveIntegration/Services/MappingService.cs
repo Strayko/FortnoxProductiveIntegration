@@ -7,17 +7,17 @@ namespace FortnoxProductiveIntegration.Services
 {
     public class MappingService : IMappingService
     {
-        public Customer CreateFortnoxCustomer(JObject customerJObject)
+        public Customer CreateFortnoxCustomer(JObject companyJObject)
         {
             var customer = new Customer
             {
-                CustomerNumber = (string)customerJObject["data"]?["id"],
-                Name = (string)customerJObject["data"]?["attributes"]?["name"],
-                Email = (string)customerJObject["data"]?["attributes"]?["email"],
-                Phone1 = (string)customerJObject["data"]?["attributes"]?["phone"],
-                Address1 = (string)customerJObject["data"]?["attributes"]?["address"],
-                City = (string)customerJObject["data"]?["attributes"]?["city"],
-                DeliveryPhone1 = (string)customerJObject["data"]?["attributes"]?["phone"],
+                CustomerNumber = (string)companyJObject["data"]?["id"],
+                Name = (string)companyJObject["data"]?["attributes"]?["name"],
+                Email = (string)companyJObject["data"]?["attributes"]?["contact"]?["emails"]?["email"],
+                Phone1 = (string)companyJObject["data"]?["attributes"]?["contact"]?["phones"]?["phone"],
+                Address1 = (string)companyJObject["data"]?["attributes"]?["contact"]?["addresses"]?["address"],
+                City = (string)companyJObject["data"]?["attributes"]?["contact"]?["addresses"]?["city"],
+                DeliveryPhone1 = (string)companyJObject["data"]?["attributes"]?["contact"]?["phones"]?["phone"],
                 Active = true,
                 Type = CustomerType.Company
             };

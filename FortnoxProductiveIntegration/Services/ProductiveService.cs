@@ -68,16 +68,16 @@ namespace FortnoxProductiveIntegration.Services
             return payments;
         }
         
-        public async Task<JObject> GetCustomerData(string customerId)
+        public async Task<JObject> GetCompanyData(string companyId)
         {
-            var contactUrl = $"contact_entries/{customerId}";
+            var contactUrl = $"companies/{companyId}";
             var httpMethod = HttpMethod.Get;
             var requestMessage = HttpRequestMessage(httpMethod, contactUrl, EmptyContent);
 
-            var customer = await HttpResponseMessage(requestMessage);
+            var company = await HttpResponseMessage(requestMessage);
             
-            _logger.LogInformation($"(Productive) Get customer data: ({customer["data"]?["attributes"]?["name"]})");
-            return customer;
+            _logger.LogInformation($"(Productive) Get company data: ({company["data"]?["attributes"]?["name"]})");
+            return company;
         }
 
         public async Task<JObject> GetLineItemsDataFromInvoice(string invoiceId)

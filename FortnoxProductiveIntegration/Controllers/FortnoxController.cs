@@ -39,8 +39,11 @@ namespace FortnoxProductiveIntegration.Controllers
                 }
                 _logger.LogInformation($"Number of new invoices created: ({newInvoices.Count})");
             }
+            else
+            {
+                _logger.LogInformation($"No new invoices created");
+            }
 
-            _logger.LogInformation($"No new invoices created");
         }
     }
 }
