@@ -5,11 +5,11 @@ using Quartz;
 namespace FortnoxProductiveIntegration.Scheduler
 {
     [DisallowConcurrentExecution]
-    public class HelloWorldJob : IJob
+    public class FortnoxCreatingNewInvoices : IJob
     {
-        private readonly ILogger<HelloWorldJob> _logger;
+        private readonly ILogger<FortnoxCreatingNewInvoices> _logger;
 
-        public HelloWorldJob(ILogger<HelloWorldJob> logger)
+        public FortnoxCreatingNewInvoices(ILogger<FortnoxCreatingNewInvoices> logger)
         {
             _logger = logger;
         }

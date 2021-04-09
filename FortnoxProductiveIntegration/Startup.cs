@@ -36,8 +36,7 @@ namespace FortnoxProductiveIntegration
             services.AddQuartz(q =>
             {
                 q.UseMicrosoftDependencyInjectionScopedJobFactory();
-                
-                q.AddJobAndTrigger<HelloWorldJob>(Configuration);
+                q.AddJobAndTrigger<FortnoxCreatingNewInvoices>(Configuration);
                 q.AddJobAndTrigger<SecondJob>(Configuration);
             });
             services.AddQuartzHostedService(q => q.WaitForJobsToComplete = true);
