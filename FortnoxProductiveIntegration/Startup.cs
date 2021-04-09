@@ -35,20 +35,8 @@ namespace FortnoxProductiveIntegration
             {
                 q.UseMicrosoftDependencyInjectionScopedJobFactory();
                 
-                var jobKey = new JobKey("HelloWorldJob");
-                q.AddJob<HelloWorldJob>(opts => opts.WithIdentity(jobKey));
-                q.AddTrigger(opts => opts
-                    .ForJob(jobKey)
-                    .WithIdentity("HelloWorldJob-trigger")
-                    .WithCronSchedule("0/5 * * * * ?"));
-
-                var jobKey2 = new JobKey("SecondJob");
-                q.AddJob<SecondJob>(opts => opts.WithIdentity(jobKey2));
-                q.AddTrigger(opts => opts
-                    .ForJob(jobKey2)
-                    .WithIdentity("SecondJob-trgger")
-                    .WithCronSchedule("0/5 * * * * ?"));
-
+                q.AddJobAndTrigger<HelloWorldJob>(Configuration);
+                q.AddJobAndTrigger<SecondJob>(Configuration);
             });
             services.AddQuartzHostedService(q => q.WaitForJobsToComplete = true);
             

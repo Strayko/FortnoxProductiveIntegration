@@ -8,9 +8,9 @@ namespace FortnoxProductiveIntegration.Controllers
     [Route("api/[controller]")]
     public class CronController : ControllerBase
     {
-        public async Task Get()
-        {
-            Console.WriteLine("test");
-        }
+        // public async Task Get()
+        // {
+        //     Console.WriteLine("test");
+        // }
     }
 }
