@@ -1,3 +1,4 @@
+using FortnoxProductiveIntegration.Connectors;
 using FortnoxProductiveIntegration.Scheduler;
 using FortnoxProductiveIntegration.Services;
 using FortnoxProductiveIntegration.Services.Interfaces;
@@ -30,6 +31,7 @@ namespace FortnoxProductiveIntegration
             services.AddScoped<IProductiveService, ProductiveService>();
             services.AddScoped<IFortnoxService, FortnoxService>();
             services.AddScoped<IMappingService, MappingService>();
+            services.AddScoped<IConnector, Connector>();
 
             services.AddQuartz(q =>
             {

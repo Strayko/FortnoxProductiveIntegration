@@ -21,20 +21,26 @@ namespace FortnoxProductiveIntegration.Services
         private readonly IProductiveService _productiveService;
         private readonly IMappingService _mappingService;
         private static ILogger<FortnoxService> _logger;
+        private readonly IConnector _connector;
 
-        public FortnoxService(IProductiveService productiveService, IMappingService mappingService, ILogger<FortnoxService> logger)
+        public FortnoxService(
+            IProductiveService productiveService, 
+            IMappingService mappingService, 
+            ILogger<FortnoxService> logger, 
+            IConnector connector)
         {
             _productiveService = productiveService;
             _mappingService = mappingService;
             _logger = logger;
+            _connector = connector;
         }
 
         public async Task<long?> CreateInvoice(JToken invoiceJObject)
         {
             var companyId = ConvertIdJTokenToString(invoiceJObject);
             
-            var customerConnector = FortnoxConnector.Customer();
-            var invoiceConnector = FortnoxConnector.Invoice();
+            var customerConnector = _connector.FortnoxCustomer();
+            var invoiceConnector = _connector.FortnoxInvoice();
             
             var productiveCompany = await _productiveService.GetCompanyData(companyId);
 
@@ -84,7 +90,7 @@ namespace FortnoxProductiveIntegration.Services
         {
             var invoiceIdNumber = (long) invoice["attributes"]?["number"];
 
-            var fortnoxInvoiceConnector = FortnoxConnector.Invoice();
+            var fortnoxInvoiceConnector = _connector.FortnoxInvoice();
             Invoice fortnoxInvoice = null;
             try
             {

@@ -4,11 +4,8 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
 using Fortnox.SDK.Entities;
-using Fortnox.SDK.Exceptions;
 using FortnoxProductiveIntegration.Connectors;
 using FortnoxProductiveIntegration.Services.Interfaces;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Http;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 
@@ -17,21 +14,24 @@ namespace FortnoxProductiveIntegration.Services
     public class ProductiveService : IProductiveService
     {
         private readonly ILogger<ProductiveService> _logger;
+        private static IConnector _connector;
         private readonly HttpClient _httpClient;
         private const string EmptyContent = ""; 
         
-        public ProductiveService(ILogger<ProductiveService> logger)
+        public ProductiveService(ILogger<ProductiveService> logger, IConnector connector)
         {
             _logger = logger;
+            _connector = connector;
             _httpClient = new HttpClient
             {
                 BaseAddress = new Uri("https://api.productive.io/api/v2/"),
                 DefaultRequestHeaders = 
-                { 
+                {
                     Accept = { MediaTypeWithQualityHeaderValue.Parse("application/json") }
                 }
             };
         }
+        
         public async Task<JObject> GetUnpaidInvoiceData()
         {
             var invoiceUrl = "invoices?filter[status]=2";
@@ -94,7 +94,7 @@ namespace FortnoxProductiveIntegration.Services
 
         public async Task<JArray> NewInvoices(JToken dailyInvoices)
         {
-            var invoiceConnector = FortnoxConnector.Invoice();
+            var invoiceConnector = _connector.FortnoxInvoice();
             JArray newInvoices = new JArray();
             foreach (var invoice in dailyInvoices)
             {
@@ -155,7 +155,7 @@ namespace FortnoxProductiveIntegration.Services
             var responseMessage = await _httpClient.SendAsync(requestMessage);
             var jsonString = await responseMessage.Content.ReadAsStringAsync();
             var jsonObj = JObject.Parse(jsonString);
-
+        
             return jsonObj;
         }
 
@@ -166,8 +166,8 @@ namespace FortnoxProductiveIntegration.Services
                 Content = new StringContent(content, Encoding.UTF8, "application/vnd.api+json"),
                 Headers =
                 {
-                    {"X-Auth-Token", "f3dbdb72-9919-4726-8441-8cd41b58e119"},
-                    {"X-Organization-Id", "15066"}
+                    {"X-Auth-Token", _connector.ProductiveXAuthToken()},
+                    {"X-Organization-Id", _connector.ProductiveXOrganizationId()}
                 }
             };
             return requestMessage;

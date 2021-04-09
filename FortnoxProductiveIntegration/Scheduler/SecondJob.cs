@@ -20,7 +20,7 @@ namespace FortnoxProductiveIntegration.Scheduler
 
             Task.Run(async delegate
             {
-                await Task.Delay(1000, source.Token);
+                await Task.Delay(9000, source.Token);
                 _logger.LogInformation("Second Job");
             }, source.Token);
             
