@@ -15,8 +15,8 @@ namespace FortnoxProductiveIntegration.Controllers
         private readonly ILogger<FortnoxController> _logger;
 
         public FortnoxController(
-            IFortnoxService fortnoxService, 
-            IProductiveService productiveService, 
+            IFortnoxService fortnoxService,
+            IProductiveService productiveService,
             ILogger<FortnoxController> logger)
         {
             _fortnoxService = fortnoxService;
@@ -31,20 +31,20 @@ namespace FortnoxProductiveIntegration.Controllers
             var invoicesData = await _productiveService.GetUnpaidInvoiceData();
             var dailyInvoices = _productiveService.DailyInvoicesFilter(invoicesData["data"]);
             var newInvoices = await _productiveService.NewInvoices(dailyInvoices);
-            
+
             if (newInvoices.Count > 0)
             {
                 foreach (var invoice in newInvoices)
                 {
                     await _fortnoxService.CreateInvoice(invoice);
                 }
+
                 _logger.LogInformation($"Number of new invoices created: ({newInvoices.Count})");
             }
             else
             {
                 _logger.LogInformation($"No new invoices created");
             }
-
         }
     }
 }

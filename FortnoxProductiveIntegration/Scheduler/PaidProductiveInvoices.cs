@@ -5,11 +5,11 @@ using Quartz;
 
 namespace FortnoxProductiveIntegration.Scheduler
 {
-    public class SecondJob : IJob
+    public class PaidProductiveInvoices : IJob
     {
-        private readonly ILogger<SecondJob> _logger;
+        private readonly ILogger<PaidProductiveInvoices> _logger;
 
-        public SecondJob(ILogger<SecondJob> logger)
+        public PaidProductiveInvoices(ILogger<PaidProductiveInvoices> logger)
         {
             _logger = logger;
         }
@@ -21,7 +21,8 @@ namespace FortnoxProductiveIntegration.Scheduler
             Task.Run(async delegate
             {
                 await Task.Delay(9000, source.Token);
-                _logger.LogInformation("Second Job");
+                
+                _logger.LogInformation("A job was started PaidProductiveInvoices");
             }, source.Token);
             
             return Task.CompletedTask;

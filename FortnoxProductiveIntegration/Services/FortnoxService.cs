@@ -101,14 +101,9 @@ namespace FortnoxProductiveIntegration.Services
                 // ignored
             }
 
-            if (fortnoxInvoice == null)
-            {
-                _logger.LogInformation($"(Fortnox) Invoice with id: ({invoiceIdNumber}) not exists");
-            }
-            else
-            {
-                _logger.LogInformation($"(Fortnox) Get invoice with id: ({fortnoxInvoice.DocumentNumber}) and customer name: ({fortnoxInvoice.CustomerName}) )");
-            }
+            _logger.LogInformation(fortnoxInvoice == null
+                ? $"(Fortnox) Invoice with id: ({invoiceIdNumber}) not exists"
+                : $"(Fortnox) Get invoice with id: ({fortnoxInvoice.DocumentNumber}) and customer name: ({fortnoxInvoice.CustomerName}) )");
 
             return fortnoxInvoice;
         }

@@ -1,4 +1,5 @@
 ﻿using System.Threading.Tasks;
+using FortnoxProductiveIntegration.Services.Interfaces;
 using Microsoft.Extensions.Logging;
 using Quartz;
 
@@ -13,10 +14,11 @@ namespace FortnoxProductiveIntegration.Scheduler
         {
             _logger = logger;
         }
-        
+
         public Task Execute(IJobExecutionContext context)
         {
-            _logger.LogInformation("Hello World!");
+            _logger.LogInformation("A job was started FortnoxCreatingNewInvoices");
+
             return Task.CompletedTask;
         }
     }
