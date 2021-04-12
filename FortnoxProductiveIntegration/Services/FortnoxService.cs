@@ -89,8 +89,8 @@ namespace FortnoxProductiveIntegration.Services
         public Invoice GetFortnoxInvoice(JToken invoice)
         {
             var invoiceIdNumber = (long) invoice["attributes"]?["number"];
-
             var fortnoxInvoiceConnector = _connector.FortnoxInvoice();
+            
             Invoice fortnoxInvoice = null;
             try
             {
@@ -100,8 +100,16 @@ namespace FortnoxProductiveIntegration.Services
             {
                 // ignored
             }
-            
-            _logger.LogInformation($"(Fortnox) Get invoice with id: ({fortnoxInvoice.DocumentNumber}) and customer name: ({fortnoxInvoice.CustomerName}) )");
+
+            if (fortnoxInvoice == null)
+            {
+                _logger.LogInformation($"(Fortnox) Invoice with id: ({invoiceIdNumber}) not exists");
+            }
+            else
+            {
+                _logger.LogInformation($"(Fortnox) Get invoice with id: ({fortnoxInvoice.DocumentNumber}) and customer name: ({fortnoxInvoice.CustomerName}) )");
+            }
+
             return fortnoxInvoice;
         }
         
@@ -112,19 +120,18 @@ namespace FortnoxProductiveIntegration.Services
             {
                 var fortnoxInvoice = GetFortnoxInvoice(invoice);
 
-                if (fortnoxInvoice.FinalPayDate != null)
-                {
-                    var date = fortnoxInvoice.FinalPayDate.Value.ToString("yyy-MM-dd");
-                    var invoiceIdFromSystem = (string) invoice["id"];
-                    var amount = (string) invoice["attributes"]?["amount"];
+                if (fortnoxInvoice?.FinalPayDate == null) continue;
+                
+                var date = fortnoxInvoice.FinalPayDate.Value.ToString("yyy-MM-dd");
+                var invoiceIdFromSystem = (string) invoice["id"];
+                var amount = (string) invoice["attributes"]?["amount"];
 
-                    var contentSentOn = JsonData.ContentSentOn(date);
-                    var contentPayments = JsonData.ContentPayments(amount, date, invoiceIdFromSystem);
+                var contentSentOn = JsonData.ContentSentOn(date);
+                var contentPayments = JsonData.ContentPayments(amount, date, invoiceIdFromSystem);
 
-                    await _productiveService.SentOn(invoiceIdFromSystem, contentSentOn);
-                    await _productiveService.Payments(contentPayments);
-                    paidInvoices++;
-                }
+                await _productiveService.SentOn(invoiceIdFromSystem, contentSentOn);
+                await _productiveService.Payments(contentPayments);
+                paidInvoices++;
             }
 
             return paidInvoices;

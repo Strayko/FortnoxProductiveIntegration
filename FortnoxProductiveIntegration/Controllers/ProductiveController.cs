@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using FortnoxProductiveIntegration.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -29,7 +30,6 @@ namespace FortnoxProductiveIntegration.Controllers
         {
             var unpaidProductiveInvoices = await _productiveService.GetUnpaidInvoiceData();
             var productiveInvoices = unpaidProductiveInvoices["data"];
-            
             var paidInvoices = await _fortnoxService.CheckPaidInvoices(productiveInvoices);
             
             _logger.LogInformation($"Number of new invoices paid: ({paidInvoices})");
