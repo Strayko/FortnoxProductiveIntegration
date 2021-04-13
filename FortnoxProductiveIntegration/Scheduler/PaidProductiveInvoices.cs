@@ -7,6 +7,7 @@ using Quartz;
 
 namespace FortnoxProductiveIntegration.Scheduler
 {
+    [DisallowConcurrentExecution]
     public class PaidProductiveInvoices : IJob
     {
         private readonly ILogger<PaidProductiveInvoices> _logger;
