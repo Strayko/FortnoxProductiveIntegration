@@ -29,7 +29,7 @@ namespace FortnoxProductiveIntegration.Scheduler
 
             Task.Run(async delegate
             {
-                await Task.Delay(5000, source.Token);
+                await Task.Delay(10000, source.Token);
                 
                 _logger.LogInformation($"A job was started PaidProductiveInvoices at: ({DateTime.Now})");
                 

@@ -8,5 +8,7 @@ namespace FortnoxProductiveIntegration.Connectors
         InvoiceConnector FortnoxInvoice();
         string ProductiveXAuthToken();
         string ProductiveXOrganizationId();
+        string FortnoxAccessToken();
+        string FortnoxClientSecret();
     }
 }

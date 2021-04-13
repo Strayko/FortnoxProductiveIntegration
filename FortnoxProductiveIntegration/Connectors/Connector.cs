@@ -21,6 +21,16 @@ namespace FortnoxProductiveIntegration.Connectors
         {
             return _configuration["Productive:X-Organization-Id"];
         }
+
+        public string FortnoxAccessToken()
+        {
+            return _configuration["Fortnox:AccessToken"];
+        }
+
+        public string FortnoxClientSecret()
+        {
+            return _configuration["Fortnox:ClientSecret"];
+        }
         
         public CustomerConnector FortnoxCustomer()
         {

@@ -2,7 +2,9 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Text;
 using System.Threading.Tasks;
 using Fortnox.SDK.Connectors;
 using Fortnox.SDK.Entities;
@@ -21,7 +23,8 @@ namespace FortnoxProductiveIntegration.Services
         private readonly IProductiveService _productiveService;
         private readonly IMappingService _mappingService;
         private static ILogger<FortnoxService> _logger;
-        private readonly IConnector _connector;
+        private static IConnector _connector;
+        private readonly HttpClient _httpClient;
 
         public FortnoxService(
             IProductiveService productiveService, 
@@ -33,6 +36,14 @@ namespace FortnoxProductiveIntegration.Services
             _mappingService = mappingService;
             _logger = logger;
             _connector = connector;
+            _httpClient = new HttpClient
+            {
+                BaseAddress = new Uri("https://api.fortnox.se/3/"),
+                DefaultRequestHeaders = 
+                {
+                    Accept = { MediaTypeWithQualityHeaderValue.Parse("application/json") }
+                }
+            };
         }
 
         public async Task<long?> CreateInvoice(JToken invoiceJObject)
@@ -58,8 +69,8 @@ namespace FortnoxProductiveIntegration.Services
             
             var invoice = new Invoice()
             {
-                DocumentNumber = (long)invoiceJObject["attributes"]?["number"],
                 Currency = (string)invoiceJObject["attributes"]?["currency"],
+                ExternalInvoiceReference1 = (string)invoiceJObject["attributes"]?["number"],
                 CurrencyUnit = 1,
                 City = customer.City,
                 Language = Language.English,
@@ -86,26 +97,36 @@ namespace FortnoxProductiveIntegration.Services
             return status.DocumentNumber;
         }
         
-        public Invoice GetFortnoxInvoice(JToken invoice)
+        private async Task<JToken> GetFortnoxInvoice(JToken invoice)
         {
-            var invoiceIdNumber = (long) invoice["attributes"]?["number"];
-            var fortnoxInvoiceConnector = _connector.FortnoxInvoice();
-            
-            Invoice fortnoxInvoice = null;
-            try
+            var invoiceIdNumber = (string) invoice["attributes"]?["number"];
+            var fullyPaid = await FullyPaid();
+
+            foreach (var item in fullyPaid)
             {
-                fortnoxInvoice = fortnoxInvoiceConnector.Get(invoiceIdNumber);
-            }
-            catch (Exception)
-            {
-                // ignored
+                
             }
 
-            _logger.LogInformation(fortnoxInvoice == null
-                ? $"(Fortnox) Invoice with id: ({invoiceIdNumber}) not exists"
-                : $"(Fortnox) Get invoice with id: ({fortnoxInvoice.DocumentNumber}) and customer name: ({fortnoxInvoice.CustomerName}) )");
+            // var invoiceIdNumber = (long) invoice["attributes"]?["number"];
+            // var fortnoxInvoiceConnector = _connector.FortnoxInvoice();
+            //
+            // Invoice fortnoxInvoice = null;
+            // try
+            // {
+            //     fortnoxInvoice = fortnoxInvoiceConnector.Get(invoiceIdNumber);
+            // }
+            // catch (Exception)
+            // {
+            //     // ignored
+            // }
+            //
+            // _logger.LogInformation(fortnoxInvoice == null
+            //     ? $"(Fortnox) Invoice with id: ({invoiceIdNumber}) not exists"
+            //     : $"(Fortnox) Get invoice with id: ({fortnoxInvoice.DocumentNumber}) and customer name: ({fortnoxInvoice.CustomerName}) )");
+            //
+            // return fortnoxInvoice;
 
-            return fortnoxInvoice;
+            return fullyPaid;
         }
         
         public async Task<int> CheckPaidInvoices(JToken productiveInvoices)
@@ -130,6 +151,14 @@ namespace FortnoxProductiveIntegration.Services
             }
 
             return paidInvoices;
+        }
+
+        private async Task<JToken> FullyPaid()
+        {
+            var requestMessage = HttpRequestMessage();
+            var responseMessage = await HttpResponseMessage(requestMessage);
+
+            return responseMessage;
         }
         
         private async Task<JToken> GetLineItems(JToken invoiceIdJToken)
@@ -168,6 +197,29 @@ namespace FortnoxProductiveIntegration.Services
         {
             var customerId = (string) invoiceJObject["relationships"]?["company"]?["data"]?["id"];
             return customerId;
+        }
+        
+        private async Task<JObject> HttpResponseMessage(HttpRequestMessage requestMessage)
+        {
+            var responseMessage = await _httpClient.SendAsync(requestMessage);
+            var jsonString = await responseMessage.Content.ReadAsStringAsync();
+            var jsonObj = JObject.Parse(jsonString);
+        
+            return jsonObj;
+        }
+        
+        private static HttpRequestMessage HttpRequestMessage()
+        {
+            var requestMessage = new HttpRequestMessage(HttpMethod.Get, "invoices/?filter=fullypaid")
+            {
+                Content = new StringContent(string.Empty, Encoding.UTF8, "application/json"),
+                Headers =
+                {
+                    {"Access-Token", _connector.FortnoxAccessToken()},
+                    {"Client-Secret", _connector.FortnoxClientSecret()}
+                }
+            };
+            return requestMessage;
         }
 
         // var invoiceSearch = new InvoiceSearch()
