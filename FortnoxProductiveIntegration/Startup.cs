@@ -4,8 +4,6 @@ using FortnoxProductiveIntegration.Services;
 using FortnoxProductiveIntegration.Services.Interfaces;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.HttpsPolicy;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -28,10 +26,10 @@ namespace FortnoxProductiveIntegration
         {
             services.AddControllers();
 
-            services.AddScoped<IProductiveService, ProductiveService>();
-            services.AddScoped<IFortnoxService, FortnoxService>();
-            services.AddScoped<IMappingService, MappingService>();
-            services.AddScoped<IConnector, Connector>();
+            services.AddSingleton<IProductiveService, ProductiveService>();
+            services.AddSingleton<IFortnoxService, FortnoxService>();
+            services.AddSingleton<IMappingService, MappingService>();
+            services.AddSingleton<IConnector, Connector>();
 
             services.AddQuartz(q =>
             {
