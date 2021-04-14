@@ -56,7 +56,7 @@ namespace FortnoxProductiveIntegration.Services
             var productiveCompany = await _productiveService.GetCompanyData(companyId);
 
             var fortnoxCustomer = await FortnoxCustomerExists(customerConnector, companyId);
-
+            
             var customer = fortnoxCustomer ?? _mappingService.CreateFortnoxCustomer(productiveCompany);
             
             var productiveLineItem = await GetLineItems(invoiceJObject["id"]);
@@ -71,6 +71,7 @@ namespace FortnoxProductiveIntegration.Services
             {
                 Currency = (string)invoiceJObject["attributes"]?["currency"],
                 ExternalInvoiceReference1 = (string)invoiceJObject["attributes"]?["number"],
+                YourOrderNumber = (string)invoiceJObject["attributes"]?["number"],
                 CurrencyUnit = 1,
                 City = customer.City,
                 Language = Language.English,
@@ -85,12 +86,12 @@ namespace FortnoxProductiveIntegration.Services
                 InvoiceType = InvoiceType.CashInvoice,
                 InvoiceRows = new List<InvoiceRow>(invoiceRows)
             };
-
+            
             if (fortnoxCustomer == null)
                 await customerConnector.CreateAsync(customer);
 
             var status = await invoiceConnector.CreateAsync(invoice);
-
+            
             _logger.LogInformation($"(Fortnox) Customer with name: ({customer.Name}) and id: ({customer.CustomerNumber}) preparing and invoice");
             _logger.LogInformation($"(Fortnox) The invoice under id: ({status.DocumentNumber}) is stored");
 
@@ -100,9 +101,11 @@ namespace FortnoxProductiveIntegration.Services
         private async Task<JToken> GetFortnoxInvoice(JToken invoice)
         {
             var invoiceIdNumber = (string) invoice["attributes"]?["number"];
-            var fullyPaid = await FullyPaid();
+            var fullyPaidInvoices = await FullyPaidInvoices();
 
-            foreach (var item in fullyPaid)
+            Console.WriteLine(fullyPaidInvoices);
+
+            foreach (var fullyPaidInvoice in fullyPaidInvoices)
             {
                 
             }
@@ -126,34 +129,54 @@ namespace FortnoxProductiveIntegration.Services
             //
             // return fortnoxInvoice;
 
-            return fullyPaid;
+            return fullyPaidInvoices;
+        }
+
+        private static JToken FindByNumber(JToken fullyPaidInvoices, JToken invoice)
+        {
+            foreach (var item in fullyPaidInvoices["Invoices"])
+            {
+                var fortnoxNumber = (string)item["ExternalInvoiceReference1"];
+                var productiveNumber = (string)invoice["attributes"]?["number"];
+                
+                if (fortnoxNumber == productiveNumber)
+                    return item;
+            }
+            
+            return null;
         }
         
         public async Task<int> CheckPaidInvoices(JToken productiveInvoices)
         {
-            var paidInvoices = 0;
+            var newPaidInvoices = 0;
+            var fullyPaidInvoices = await FullyPaidInvoices();
+
             foreach (var invoice in productiveInvoices)
             {
-                var fortnoxInvoice = GetFortnoxInvoice(invoice);
 
-                if (fortnoxInvoice?.FinalPayDate == null) continue;
-                
-                var date = fortnoxInvoice.FinalPayDate.Value.ToString("yyy-MM-dd");
-                var invoiceIdFromSystem = (string) invoice["id"];
-                var amount = (string) invoice["attributes"]?["amount"];
+                var findByNumber = FindByNumber(fullyPaidInvoices, invoice);
 
-                var contentSentOn = JsonData.ContentSentOn(date);
-                var contentPayments = JsonData.ContentPayments(amount, date, invoiceIdFromSystem);
+                Console.WriteLine(findByNumber);
 
-                await _productiveService.SentOn(invoiceIdFromSystem, contentSentOn);
-                await _productiveService.Payments(contentPayments);
-                paidInvoices++;
+                // var fortnoxInvoice = await GetFortnoxInvoice(invoice);
+                // if (fortnoxInvoice?.FinalPayDate == null) continue;
+                //
+                // var date = fortnoxInvoice.FinalPayDate.Value.ToString("yyy-MM-dd");
+                // var invoiceIdFromSystem = (string) invoice["id"];
+                // var amount = (string) invoice["attributes"]?["amount"];
+                //
+                // var contentSentOn = JsonData.ContentSentOn(date);
+                // var contentPayments = JsonData.ContentPayments(amount, date, invoiceIdFromSystem);
+                //
+                // await _productiveService.SentOn(invoiceIdFromSystem, contentSentOn);
+                // await _productiveService.Payments(contentPayments);
+                // paidInvoices++;
             }
 
-            return paidInvoices;
+            return newPaidInvoices;
         }
 
-        private async Task<JToken> FullyPaid()
+        private async Task<JToken> FullyPaidInvoices()
         {
             var requestMessage = HttpRequestMessage();
             var responseMessage = await HttpResponseMessage(requestMessage);

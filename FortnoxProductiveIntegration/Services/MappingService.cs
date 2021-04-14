@@ -13,15 +13,14 @@ namespace FortnoxProductiveIntegration.Services
             {
                 CustomerNumber = (string)companyJObject["data"]?["id"],
                 Name = (string)companyJObject["data"]?["attributes"]?["name"],
-                Email = (string)companyJObject["data"]?["attributes"]?["contact"]?["emails"]?["email"],
-                Phone1 = (string)companyJObject["data"]?["attributes"]?["contact"]?["phones"]?["phone"],
-                Address1 = (string)companyJObject["data"]?["attributes"]?["contact"]?["addresses"]?["address"],
-                City = (string)companyJObject["data"]?["attributes"]?["contact"]?["addresses"]?["city"],
-                DeliveryPhone1 = (string)companyJObject["data"]?["attributes"]?["contact"]?["phones"]?["phone"],
+                Email = (string)companyJObject["data"]?["attributes"]?["contact"]?["emails"]?[0]?["email"],
+                Phone1 = (string)companyJObject["data"]?["attributes"]?["contact"]?["phones"]?[0]?["phone"],
+                Address1 = (string)companyJObject["data"]?["attributes"]?["contact"]?["addresses"]?[0]?["address"],
+                City = (string)companyJObject["data"]?["attributes"]?["contact"]?["addresses"]?[0]?["city"],
+                DeliveryPhone1 = (string)companyJObject["data"]?["attributes"]?["contact"]?["phones"]?[0]?["phone"],
                 Active = true,
                 Type = CustomerType.Company
             };
-            
             return customer;
         }
 
