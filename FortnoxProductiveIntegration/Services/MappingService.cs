@@ -1,4 +1,5 @@
 ﻿using System;
+using Fortnox.SDK.Connectors;
 using Fortnox.SDK.Entities;
 using FortnoxProductiveIntegration.Services.Interfaces;
 using Newtonsoft.Json.Linq;
@@ -7,11 +8,10 @@ namespace FortnoxProductiveIntegration.Services
 {
     public class MappingService : IMappingService
     {
-        public Customer CreateFortnoxCustomer(JObject companyJObject)
+        public Customer CreateFortnoxCustomer(JObject companyJObject, CustomerConnector customerConnector)
         {
             var customer = new Customer
             {
-                CustomerNumber = (string)companyJObject["data"]?["id"],
                 Name = (string)companyJObject["data"]?["attributes"]?["name"],
                 Email = (string)companyJObject["data"]?["attributes"]?["contact"]?["emails"]?[0]?["email"],
                 Phone1 = (string)companyJObject["data"]?["attributes"]?["contact"]?["phones"]?[0]?["phone"],
@@ -21,7 +21,10 @@ namespace FortnoxProductiveIntegration.Services
                 Active = true,
                 Type = CustomerType.Company
             };
-            return customer;
+            
+            var newCustomer = customerConnector.CreateAsync(customer).GetAwaiter().GetResult();
+
+            return newCustomer;
         }
 
         public InvoiceRow CreateFortnoxInvoiceRow(JToken item)

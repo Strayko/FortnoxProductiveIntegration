@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using Fortnox.SDK.Connectors;
 using Fortnox.SDK.Entities;
 using Fortnox.SDK.Exceptions;
+using Fortnox.SDK.Search;
 using FortnoxProductiveIntegration.Connectors;
 using FortnoxProductiveIntegration.JsonFormat;
 using FortnoxProductiveIntegration.Services.Interfaces;
@@ -55,10 +56,11 @@ namespace FortnoxProductiveIntegration.Services
             
             var productiveCompany = await _productiveService.GetCompanyData(companyId);
 
+            // TODO: Make a filer to find the user by another reference
             var fortnoxCustomer = await FortnoxCustomerExists(customerConnector, companyId);
             
-            var customer = fortnoxCustomer ?? _mappingService.CreateFortnoxCustomer(productiveCompany);
-            
+            var customer = fortnoxCustomer ?? _mappingService.CreateFortnoxCustomer(productiveCompany, customerConnector);
+
             var productiveLineItem = await GetLineItems(invoiceJObject["id"]);
 
             var invoiceRows = productiveLineItem.Select(item => _mappingService.CreateFortnoxInvoiceRow(item)).ToList();
@@ -86,9 +88,6 @@ namespace FortnoxProductiveIntegration.Services
                 InvoiceType = InvoiceType.CashInvoice,
                 InvoiceRows = new List<InvoiceRow>(invoiceRows)
             };
-            
-            if (fortnoxCustomer == null)
-                await customerConnector.CreateAsync(customer);
 
             var status = await invoiceConnector.CreateAsync(invoice);
             
@@ -97,71 +96,47 @@ namespace FortnoxProductiveIntegration.Services
 
             return status.DocumentNumber;
         }
-        
-        private async Task<JToken> GetFortnoxInvoice(JToken invoice)
-        {
-            var invoiceIdNumber = (string) invoice["attributes"]?["number"];
-            var fullyPaidInvoices = await FullyPaidInvoices();
 
-            Console.WriteLine(fullyPaidInvoices);
-
-            foreach (var fullyPaidInvoice in fullyPaidInvoices)
-            {
-                
-            }
-
-            // var invoiceIdNumber = (long) invoice["attributes"]?["number"];
-            // var fortnoxInvoiceConnector = _connector.FortnoxInvoice();
-            //
-            // Invoice fortnoxInvoice = null;
-            // try
-            // {
-            //     fortnoxInvoice = fortnoxInvoiceConnector.Get(invoiceIdNumber);
-            // }
-            // catch (Exception)
-            // {
-            //     // ignored
-            // }
-            //
-            // _logger.LogInformation(fortnoxInvoice == null
-            //     ? $"(Fortnox) Invoice with id: ({invoiceIdNumber}) not exists"
-            //     : $"(Fortnox) Get invoice with id: ({fortnoxInvoice.DocumentNumber}) and customer name: ({fortnoxInvoice.CustomerName}) )");
-            //
-            // return fortnoxInvoice;
-
-            return fullyPaidInvoices;
-        }
-
-        private static JToken FindByNumber(JToken fullyPaidInvoices, JToken invoice)
-        {
-            foreach (var item in fullyPaidInvoices["Invoices"])
-            {
-                var fortnoxNumber = (string)item["ExternalInvoiceReference1"];
-                var productiveNumber = (string)invoice["attributes"]?["number"];
-                
-                if (fortnoxNumber == productiveNumber)
-                    return item;
-            }
-            
-            return null;
-        }
+        // private static JToken FindByNumberFilter(JToken fullyPaidInvoices, JToken invoice)
+        // {
+        //     foreach (var item in fullyPaidInvoices["Invoices"])
+        //     {
+        //         var fortnoxNumber = (string)item["ExternalInvoiceReference1"];
+        //         var productiveNumber = (string)invoice["attributes"]?["number"];
+        //         
+        //         if (fortnoxNumber == productiveNumber)
+        //             return item;
+        //     }
+        //     
+        //     return null;
+        // }
         
         public async Task<int> CheckPaidInvoices(JToken productiveInvoices)
         {
             var newPaidInvoices = 0;
-            var fullyPaidInvoices = await FullyPaidInvoices();
+            // var fullyPaidInvoices = await FullyPaidInvoices();
+            var invoiceConnector = _connector.FortnoxInvoice();
 
             foreach (var invoice in productiveInvoices)
             {
+                // var getByNumber = FindByNumberFilter(fullyPaidInvoices, invoice);
+                
+                var invoiceSearch = new InvoiceSearch()
+                {
+                    ExternalInvoiceReference1 = (string)invoice["attributes"]?["number"]
+                };
+                
+                var invoiceEntityCollection = await invoiceConnector.FindAsync(invoiceSearch);
 
-                var findByNumber = FindByNumber(fullyPaidInvoices, invoice);
+                var sut = invoiceEntityCollection?.Entities.Count;
+                Console.WriteLine(sut);
+                if (invoiceEntityCollection?.Entities.Count == 0) continue;
 
-                Console.WriteLine(findByNumber);
-
-                // var fortnoxInvoice = await GetFortnoxInvoice(invoice);
-                // if (fortnoxInvoice?.FinalPayDate == null) continue;
+                Console.WriteLine(invoice);
+                
+                // if (getByNumber?["FinalPayDate"] == null) continue;
                 //
-                // var date = fortnoxInvoice.FinalPayDate.Value.ToString("yyy-MM-dd");
+                // var date = (string)getByNumber["FinalPayDate"];
                 // var invoiceIdFromSystem = (string) invoice["id"];
                 // var amount = (string) invoice["attributes"]?["amount"];
                 //
@@ -170,7 +145,10 @@ namespace FortnoxProductiveIntegration.Services
                 //
                 // await _productiveService.SentOn(invoiceIdFromSystem, contentSentOn);
                 // await _productiveService.Payments(contentPayments);
-                // paidInvoices++;
+                //
+                // _logger.LogInformation($"(Productive) Invoice with id: ({(string)getByNumber["ExternalInvoiceReference1"]}) paid on day: ({date}) with amount: ({amount})");
+                //
+                newPaidInvoices++;
             }
 
             return newPaidInvoices;
@@ -244,13 +222,5 @@ namespace FortnoxProductiveIntegration.Services
             };
             return requestMessage;
         }
-
-        // var invoiceSearch = new InvoiceSearch()
-        // {
-        //     CustomerNumber = "9"
-        // };
-
-        // var invoices = await invoiceConnector.FindAsync(invoiceSearch);
-        // Console.WriteLine(invoices);
     }
 }

@@ -4,6 +4,7 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
 using Fortnox.SDK.Entities;
+using Fortnox.SDK.Search;
 using FortnoxProductiveIntegration.Connectors;
 using FortnoxProductiveIntegration.Services.Interfaces;
 using Microsoft.Extensions.Logging;
@@ -98,21 +99,15 @@ namespace FortnoxProductiveIntegration.Services
             JArray newInvoices = new JArray();
             foreach (var invoice in dailyInvoices)
             {
-                Invoice exist = null;
-                try
+                var invoiceSearch = new InvoiceSearch
                 {
-                    var invoiceNumber =  (long)invoice["attributes"]?["number"];
-                    exist = await invoiceConnector.GetAsync(invoiceNumber);
-                }
-                catch (Exception)
-                {
-                    // ignored
-                }
+                    ExternalInvoiceReference1 = (string)invoice["attributes"]?["number"]
+                };
 
-                if (exist == null)
-                {
+                var invoiceEntityCollection = await invoiceConnector.FindAsync(invoiceSearch);
+                
+                if (invoiceEntityCollection?.Entities.Count == 0)
                     newInvoices.Add(invoice);
-                }
             }
 
             _logger.LogInformation($"(Productive) Number of new invoices: ({newInvoices.Count})");
