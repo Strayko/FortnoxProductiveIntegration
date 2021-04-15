@@ -3,7 +3,6 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
-using Fortnox.SDK.Entities;
 using Fortnox.SDK.Search;
 using FortnoxProductiveIntegration.Connectors;
 using FortnoxProductiveIntegration.Services.Interfaces;

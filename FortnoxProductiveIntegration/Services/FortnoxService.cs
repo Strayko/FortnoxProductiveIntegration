@@ -1,19 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
-using Fortnox.SDK.Connectors;
 using Fortnox.SDK.Entities;
-using Fortnox.SDK.Exceptions;
-using Fortnox.SDK.Search;
 using FortnoxProductiveIntegration.Connectors;
 using FortnoxProductiveIntegration.JsonFormat;
 using FortnoxProductiveIntegration.Services.Interfaces;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 
@@ -55,13 +50,11 @@ namespace FortnoxProductiveIntegration.Services
             var invoiceConnector = _connector.FortnoxInvoice();
             
             var productiveCompany = await _productiveService.GetCompanyData(companyId);
-            
             var fortnoxCustomer = await FortnoxCustomerExistsFilter(companyId);
 
             var customer = fortnoxCustomer ?? _mappingService.CreateFortnoxCustomer(productiveCompany, customerConnector);
 
             var productiveLineItem = await GetLineItems(invoiceJObject["id"]);
-
             var invoiceRows = productiveLineItem.Select(item => _mappingService.CreateFortnoxInvoiceRow(item)).ToList();
 
             var createdAt = ConvertStringToDateTimeType(invoiceJObject["attributes"]?["created_at"]);
