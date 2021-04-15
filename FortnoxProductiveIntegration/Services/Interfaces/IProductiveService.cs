@@ -5,7 +5,7 @@ namespace FortnoxProductiveIntegration.Services.Interfaces
 {
     public interface IProductiveService
     {
-        Task<JObject> GetUnpaidInvoiceData();
+        Task<JObject> GetUnpaidInvoicesData();
         Task<JObject> GetCompanyData(string companyId);
         Task<JObject> GetLineItemsDataFromInvoice(string invoiceId);
         JArray DailyInvoicesFilter(JToken invoicesData);

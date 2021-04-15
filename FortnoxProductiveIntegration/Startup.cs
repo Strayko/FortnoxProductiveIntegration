@@ -1,3 +1,4 @@
+using System.Net.Http;
 using FortnoxProductiveIntegration.Connectors;
 using FortnoxProductiveIntegration.Scheduler;
 using FortnoxProductiveIntegration.Services;
@@ -27,6 +28,7 @@ namespace FortnoxProductiveIntegration
             services.AddControllers();
 
             services.AddSingleton<IProductiveService, ProductiveService>();
+            services.AddSingleton<HttpClient>();
             services.AddSingleton<IFortnoxService, FortnoxService>();
             services.AddSingleton<IMappingService, MappingService>();
             services.AddSingleton<IConnector, Connector>();

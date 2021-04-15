@@ -28,7 +28,7 @@ namespace FortnoxProductiveIntegration.Controllers
         [Route("invoices")]
         public async Task Invoices()
         {
-            var unpaidProductiveInvoices = await _productiveService.GetUnpaidInvoiceData();
+            var unpaidProductiveInvoices = await _productiveService.GetUnpaidInvoicesData();
             var productiveInvoices = unpaidProductiveInvoices["data"];
             var paidInvoices = await _fortnoxService.CheckPaidInvoices(productiveInvoices);
             

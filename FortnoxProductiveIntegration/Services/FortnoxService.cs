@@ -110,11 +110,11 @@ namespace FortnoxProductiveIntegration.Services
 
             foreach (var invoice in productiveInvoices)
             {
-                var getByNumber = FindByNumberFilter(fullyPaidInvoices, invoice);
+                var invoiceByNumber = FindByNumberFilter(fullyPaidInvoices, invoice);
 
-                if (getByNumber?["FinalPayDate"] == null) continue;
+                if (invoiceByNumber?["FinalPayDate"] == null) continue;
                 
-                var date = (string)getByNumber["FinalPayDate"];
+                var date = (string)invoiceByNumber["FinalPayDate"];
                 var invoiceIdFromSystem = (string) invoice["id"];
                 var amount = (string) invoice["attributes"]?["amount"];
                 
@@ -124,7 +124,7 @@ namespace FortnoxProductiveIntegration.Services
                 await _productiveService.SentOn(invoiceIdFromSystem, contentSentOn);
                 await _productiveService.Payments(contentPayments);
                 
-                _logger.LogInformation($"(Productive) Invoice with id: ({(string)getByNumber["ExternalInvoiceReference1"]}) paid on day: ({date}) with amount: ({amount})");
+                _logger.LogInformation($"(Productive) Invoice with id: ({(string)invoiceByNumber["ExternalInvoiceReference1"]}) paid on day: ({date}) with amount: ({amount})");
                 
                 newPaidInvoices++;
             }

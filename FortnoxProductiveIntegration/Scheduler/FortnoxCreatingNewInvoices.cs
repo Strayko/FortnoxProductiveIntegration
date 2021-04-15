@@ -31,7 +31,7 @@ namespace FortnoxProductiveIntegration.Scheduler
             {
                 _logger.LogInformation($"A job was started FortnoxCreatingNewInvoices at: ({DateTime.Now})");
             
-                var invoicesData = await _productiveService.GetUnpaidInvoiceData();
+                var invoicesData = await _productiveService.GetUnpaidInvoicesData();
                 var dailyInvoices = _productiveService.DailyInvoicesFilter(invoicesData["data"]);
                 var newInvoices = await _productiveService.NewInvoices(dailyInvoices);
 

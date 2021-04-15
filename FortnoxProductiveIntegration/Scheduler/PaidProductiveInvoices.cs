@@ -33,7 +33,7 @@ namespace FortnoxProductiveIntegration.Scheduler
                 
                 _logger.LogInformation($"A job was started PaidProductiveInvoices at: ({DateTime.Now})");
                 
-                var unpaidProductiveInvoices = await _productiveService.GetUnpaidInvoiceData();
+                var unpaidProductiveInvoices = await _productiveService.GetUnpaidInvoicesData();
                 var productiveInvoices = unpaidProductiveInvoices["data"];
                 var paidInvoices = await _fortnoxService.CheckPaidInvoices(productiveInvoices);
             

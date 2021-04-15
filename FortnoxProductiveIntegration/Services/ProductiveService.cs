@@ -18,28 +18,31 @@ namespace FortnoxProductiveIntegration.Services
         private readonly HttpClient _httpClient;
         private const string EmptyContent = ""; 
         
-        public ProductiveService(ILogger<ProductiveService> logger, IConnector connector)
+        public ProductiveService(ILogger<ProductiveService> logger, IConnector connector, HttpClient httpClient)
         {
             _logger = logger;
             _connector = connector;
-            _httpClient = new HttpClient
-            {
-                BaseAddress = new Uri("https://api.productive.io/api/v2/"),
-                DefaultRequestHeaders = 
-                {
-                    Accept = { MediaTypeWithQualityHeaderValue.Parse("application/json") }
-                }
-            };
+            _httpClient = httpClient;
+            _httpClient.BaseAddress = new Uri("https://api.productive.io/api/v2/");
+            _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+
+            // {
+            //     BaseAddress = new Uri("https://api.productive.io/api/v2/"),
+            //     DefaultRequestHeaders = 
+            //     {
+            //         Accept = { MediaTypeWithQualityHeaderValue.Parse("application/json") }
+            //     }
+            // };
         }
         
-        public async Task<JObject> GetUnpaidInvoiceData()
+        public async Task<JObject> GetUnpaidInvoicesData()
         {
             var invoiceUrl = "invoices?filter[status]=2";
             var httpMethod = HttpMethod.Get;
             var requestMessage = HttpRequestMessage(httpMethod, invoiceUrl, EmptyContent);
 
             var invoices = await HttpResponseMessage(requestMessage);
-            
+
             _logger.LogInformation($"(Productive) Number of unpaid invoices: ({invoices["meta"]?["total_count"]})");
             return invoices;
         }
