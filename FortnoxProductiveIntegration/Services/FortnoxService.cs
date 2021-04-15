@@ -25,7 +25,7 @@ namespace FortnoxProductiveIntegration.Services
         private readonly IMappingService _mappingService;
         private static ILogger<FortnoxService> _logger;
         private static IConnector _connector;
-        private readonly HttpClient _httpClient;
+        private static HttpClient _httpClient;
 
         public FortnoxService(
             IProductiveService productiveService, 
@@ -49,16 +49,15 @@ namespace FortnoxProductiveIntegration.Services
 
         public async Task<long?> CreateInvoice(JToken invoiceJObject)
         {
-            var companyId = ConvertIdJTokenToString(invoiceJObject);
+            var companyId = ConvertCompanyIdJTokenToString(invoiceJObject);
             
             var customerConnector = _connector.FortnoxCustomer();
             var invoiceConnector = _connector.FortnoxInvoice();
             
             var productiveCompany = await _productiveService.GetCompanyData(companyId);
-
-            // TODO: Make a filer to find the user by another reference
-            var fortnoxCustomer = await FortnoxCustomerExists(customerConnector, companyId);
             
+            var fortnoxCustomer = await FortnoxCustomerExistsFilter(companyId);
+
             var customer = fortnoxCustomer ?? _mappingService.CreateFortnoxCustomer(productiveCompany, customerConnector);
 
             var productiveLineItem = await GetLineItems(invoiceJObject["id"]);
@@ -97,66 +96,62 @@ namespace FortnoxProductiveIntegration.Services
             return status.DocumentNumber;
         }
 
-        // private static JToken FindByNumberFilter(JToken fullyPaidInvoices, JToken invoice)
-        // {
-        //     foreach (var item in fullyPaidInvoices["Invoices"])
-        //     {
-        //         var fortnoxNumber = (string)item["ExternalInvoiceReference1"];
-        //         var productiveNumber = (string)invoice["attributes"]?["number"];
-        //         
-        //         if (fortnoxNumber == productiveNumber)
-        //             return item;
-        //     }
-        //     
-        //     return null;
-        // }
+        private static JToken FindByNumberFilter(JToken fullyPaidInvoices, JToken invoice)
+        {
+            foreach (var item in fullyPaidInvoices["Invoices"])
+            {
+                var fortnoxNumber = (string)item["ExternalInvoiceReference1"];
+                var productiveNumber = (string)invoice["attributes"]?["number"];
+                
+                if (fortnoxNumber == productiveNumber)
+                    return item;
+            }
+            
+            return null;
+        }
         
         public async Task<int> CheckPaidInvoices(JToken productiveInvoices)
         {
             var newPaidInvoices = 0;
-            // var fullyPaidInvoices = await FullyPaidInvoices();
-            var invoiceConnector = _connector.FortnoxInvoice();
+            var fullyPaidInvoices = await FullyPaidInvoices();
 
             foreach (var invoice in productiveInvoices)
             {
-                // var getByNumber = FindByNumberFilter(fullyPaidInvoices, invoice);
-                
-                var invoiceSearch = new InvoiceSearch()
-                {
-                    ExternalInvoiceReference1 = (string)invoice["attributes"]?["number"]
-                };
-                
-                var invoiceEntityCollection = await invoiceConnector.FindAsync(invoiceSearch);
+                var getByNumber = FindByNumberFilter(fullyPaidInvoices, invoice);
 
-                var sut = invoiceEntityCollection?.Entities.Count;
-                Console.WriteLine(sut);
-                if (invoiceEntityCollection?.Entities.Count == 0) continue;
-
-                Console.WriteLine(invoice);
+                if (getByNumber?["FinalPayDate"] == null) continue;
                 
-                // if (getByNumber?["FinalPayDate"] == null) continue;
-                //
-                // var date = (string)getByNumber["FinalPayDate"];
-                // var invoiceIdFromSystem = (string) invoice["id"];
-                // var amount = (string) invoice["attributes"]?["amount"];
-                //
-                // var contentSentOn = JsonData.ContentSentOn(date);
-                // var contentPayments = JsonData.ContentPayments(amount, date, invoiceIdFromSystem);
-                //
-                // await _productiveService.SentOn(invoiceIdFromSystem, contentSentOn);
-                // await _productiveService.Payments(contentPayments);
-                //
-                // _logger.LogInformation($"(Productive) Invoice with id: ({(string)getByNumber["ExternalInvoiceReference1"]}) paid on day: ({date}) with amount: ({amount})");
-                //
+                var date = (string)getByNumber["FinalPayDate"];
+                var invoiceIdFromSystem = (string) invoice["id"];
+                var amount = (string) invoice["attributes"]?["amount"];
+                
+                var contentSentOn = JsonData.ContentSentOn(date);
+                var contentPayments = JsonData.ContentPayments(amount, date, invoiceIdFromSystem);
+                
+                await _productiveService.SentOn(invoiceIdFromSystem, contentSentOn);
+                await _productiveService.Payments(contentPayments);
+                
+                _logger.LogInformation($"(Productive) Invoice with id: ({(string)getByNumber["ExternalInvoiceReference1"]}) paid on day: ({date}) with amount: ({amount})");
+                
                 newPaidInvoices++;
             }
 
             return newPaidInvoices;
         }
 
-        private async Task<JToken> FullyPaidInvoices()
+        private static async Task<JToken> FullyPaidInvoices()
         {
-            var requestMessage = HttpRequestMessage();
+            var path = "invoices/?filter=fullypaid";
+            var requestMessage = HttpRequestMessage(path);
+            var responseMessage = await HttpResponseMessage(requestMessage);
+
+            return responseMessage;
+        }
+
+        private static async Task<JToken> GetAllCustomers()
+        {
+            var path = "customers";
+            var requestMessage = HttpRequestMessage(path);
             var responseMessage = await HttpResponseMessage(requestMessage);
 
             return responseMessage;
@@ -178,29 +173,35 @@ namespace FortnoxProductiveIntegration.Services
             return createdAtToDateTime;
         }
 
-        private static async Task<Customer> FortnoxCustomerExists(CustomerConnector customerConnector, string customerId)
+        private static async Task<Customer> FortnoxCustomerExistsFilter(string companyId)
         {
-            Customer fortnoxCustomer = null;
-            try
+            var customers = await GetAllCustomers();
+            var numberOfCustomers = customers["Customers"].Children().Count();
+            
+            _logger.LogInformation($"(Fortnox) Number of all customers from service: ({numberOfCustomers})");
+            
+            foreach (var customer in customers["Customers"])
             {
-                fortnoxCustomer = await customerConnector.GetAsync(customerId);
-            }
-            catch (Exception)
-            {
-                // ignored
-            }
+                if ((string) customer["OrganisationNumber"] != companyId) continue;
 
-            _logger.LogInformation($"(Fortnox) User exists with id: ({customerId}) ? User: ({fortnoxCustomer})");
-            return fortnoxCustomer;
+                var customerConnector = _connector.FortnoxCustomer();
+                var customerResponse =  await customerConnector.GetAsync((string) customer["CustomerNumber"]);
+                
+                _logger.LogInformation($"(Fortnox) User exists with id: ({customerResponse.CustomerNumber}) ? User: ({customerResponse.Name})");
+                return customerResponse;
+            }
+            
+            _logger.LogInformation($"(Fortnox) User does not exist with id: ({companyId})");
+            return null;
         }
 
-        private static string ConvertIdJTokenToString(JToken invoiceJObject)
+        private static string ConvertCompanyIdJTokenToString(JToken invoiceJObject)
         {
             var customerId = (string) invoiceJObject["relationships"]?["company"]?["data"]?["id"];
             return customerId;
         }
         
-        private async Task<JObject> HttpResponseMessage(HttpRequestMessage requestMessage)
+        private static async Task<JObject> HttpResponseMessage(HttpRequestMessage requestMessage)
         {
             var responseMessage = await _httpClient.SendAsync(requestMessage);
             var jsonString = await responseMessage.Content.ReadAsStringAsync();
@@ -209,9 +210,9 @@ namespace FortnoxProductiveIntegration.Services
             return jsonObj;
         }
         
-        private static HttpRequestMessage HttpRequestMessage()
+        private static HttpRequestMessage HttpRequestMessage(string path)
         {
-            var requestMessage = new HttpRequestMessage(HttpMethod.Get, "invoices/?filter=fullypaid")
+            var requestMessage = new HttpRequestMessage(HttpMethod.Get, path)
             {
                 Content = new StringContent(string.Empty, Encoding.UTF8, "application/json"),
                 Headers =

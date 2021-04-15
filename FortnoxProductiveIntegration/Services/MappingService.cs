@@ -18,6 +18,7 @@ namespace FortnoxProductiveIntegration.Services
                 Address1 = (string)companyJObject["data"]?["attributes"]?["contact"]?["addresses"]?[0]?["address"],
                 City = (string)companyJObject["data"]?["attributes"]?["contact"]?["addresses"]?[0]?["city"],
                 DeliveryPhone1 = (string)companyJObject["data"]?["attributes"]?["contact"]?["phones"]?[0]?["phone"],
+                OrganisationNumber = (string)companyJObject["data"]?["id"],
                 Active = true,
                 Type = CustomerType.Company
             };
