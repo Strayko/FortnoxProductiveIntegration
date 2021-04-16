@@ -29,6 +29,7 @@ namespace FortnoxProductiveIntegration.Controllers
         public async Task CreateInvoice()
         {
             var invoicesData = await _productiveService.GetUnpaidInvoicesData();
+            Console.WriteLine(invoicesData);
             var dailyInvoices = _productiveService.DailyInvoicesFilter(invoicesData["data"]);
             var newInvoices = await _productiveService.NewInvoices(dailyInvoices);
 

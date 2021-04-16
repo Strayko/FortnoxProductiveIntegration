@@ -1,12 +1,9 @@
-using System;
 using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Fortnox.SDK.Interfaces;
 using FortnoxProductiveIntegration.Services;
-using FortnoxProductiveIntegration.Services.Interfaces;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Moq.Protected;
@@ -34,7 +31,7 @@ namespace FortnoxProductiveIntegration.Tests
             var response = new HttpResponseMessage
             {
                 StatusCode = HttpStatusCode.OK,
-                Content = new StringContent(@"{""data"": [{""id"": ""111222"", ""type"": ""invoices""}]}", Encoding.UTF8, "application/vnd.api+json")
+                Content = new StringContent(@"{""data"": [{""id"": ""111222"", ""type"": ""invoices"", ""attributes"": {""number"": ""52""}}]}", Encoding.UTF8, "application/vnd.api+json")
             };
 
             handlerMock
