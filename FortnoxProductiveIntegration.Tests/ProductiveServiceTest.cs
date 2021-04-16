@@ -8,6 +8,7 @@ using FortnoxProductiveIntegration.Services;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Moq.Protected;
+using Newtonsoft.Json.Linq;
 using NUnit.Framework;
 
 namespace FortnoxProductiveIntegration.Tests
@@ -43,12 +44,8 @@ namespace FortnoxProductiveIntegration.Tests
 
             var unpaidInvoiceData = await productiveInvoices.GetUnpaidInvoicesData();
 
-            Assert.NotNull(unpaidInvoiceData);
-            _handlerMock.Protected().Verify(
-                "SendAsync",
-                Times.Once(),
-                ItExpr.Is<HttpRequestMessage>(req => req.Method == HttpMethod.Get),
-                ItExpr.IsAny<CancellationToken>());
+            var httpMethod = HttpMethod.Get;
+            AssertNotNullAndVerifyHttp(unpaidInvoiceData, httpMethod);
         }
 
         [Test]
@@ -69,13 +66,9 @@ namespace FortnoxProductiveIntegration.Tests
             var productiveInvoices = new ProductiveService(_logger.Object, _connector.Object, httpClient);
 
             var sentOn = await productiveInvoices.SentOn(invoiceId, contentSentOn);
-            
-            Assert.NotNull(sentOn);
-            _handlerMock.Protected().Verify(
-                "SendAsync",
-                Times.Once(),
-                ItExpr.Is<HttpRequestMessage>(req => req.Method == HttpMethod.Patch),
-                ItExpr.IsAny<CancellationToken>());
+
+            var httpMethod = HttpMethod.Patch;
+            AssertNotNullAndVerifyHttp(sentOn, httpMethod);
         }
         
         private void HandlerMockSetup(HttpResponseMessage response)
@@ -87,6 +80,16 @@ namespace FortnoxProductiveIntegration.Tests
                     ItExpr.IsAny<HttpRequestMessage>(),
                     ItExpr.IsAny<CancellationToken>())
                 .ReturnsAsync(response);
+        }
+        
+        private void AssertNotNullAndVerifyHttp(JObject jObject, HttpMethod httpMethod)
+        {
+            Assert.NotNull(jObject);
+            _handlerMock.Protected().Verify(
+                "SendAsync",
+                Times.Once(),
+                ItExpr.Is<HttpRequestMessage>(req => req.Method == httpMethod),
+                ItExpr.IsAny<CancellationToken>());
         }
     }
 }
