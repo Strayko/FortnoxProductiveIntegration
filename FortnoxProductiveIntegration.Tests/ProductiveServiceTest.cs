@@ -1,3 +1,4 @@
+using System;
 using System.Net;
 using System.Net.Http;
 using System.Text;
@@ -16,43 +17,76 @@ namespace FortnoxProductiveIntegration.Tests
     {
         private Mock<ILogger<ProductiveService>> _logger;
         private Mock<Connectors.IConnector> _connector;
+        private Mock<HttpMessageHandler> _handlerMock;
 
         [SetUp]
         public void SetUp()
         {
             _connector = new Mock<Connectors.IConnector>();
             _logger = new Mock<ILogger<ProductiveService>>();
+            _handlerMock = new Mock<HttpMessageHandler>();
         }
         
         [Test]
-        public async Task WhenGet_UnpaidInvoices_VerifySendAsyncAndParamsArg()
+        public async Task WhenGet_UnpaidInvoices_ReturnVerifyParamsArg()
         {
-            var handlerMock = new Mock<HttpMessageHandler>();
             var response = new HttpResponseMessage
             {
                 StatusCode = HttpStatusCode.OK,
                 Content = new StringContent(@"{""data"": [{""id"": ""111222"", ""type"": ""invoices"", ""attributes"": {""number"": ""52""}}]}", Encoding.UTF8, "application/vnd.api+json")
             };
 
-            handlerMock
+            HandlerMockSetup(response);
+            
+            var httpClient = new HttpClient(_handlerMock.Object);
+            var productiveInvoices = new ProductiveService(_logger.Object, _connector.Object, httpClient);
+
+            var unpaidInvoiceData = await productiveInvoices.GetUnpaidInvoicesData();
+
+            Assert.NotNull(unpaidInvoiceData);
+            _handlerMock.Protected().Verify(
+                "SendAsync",
+                Times.Once(),
+                ItExpr.Is<HttpRequestMessage>(req => req.Method == HttpMethod.Get),
+                ItExpr.IsAny<CancellationToken>());
+        }
+
+        [Test]
+        public async Task WhenInvoke_SentOn_ReturnVerifyParamsArgs()
+        {
+            var invoiceId = "22345";
+            var contentSentOn = @"{""data"": {""type"": ""invoices"", ""attributes"": {""sent_on"": ""2021-04-21""} }";
+            
+            var response = new HttpResponseMessage
+            {
+                StatusCode = HttpStatusCode.OK,
+                Content = new StringContent(@"{""data"": {""id"": ""188292"", ""type"": ""invoices"", ""attributes"": {""number"": ""2021-02""}}}", Encoding.UTF8, "application/vnd.api+json")
+            };
+
+            HandlerMockSetup(response);
+
+            var httpClient = new HttpClient(_handlerMock.Object);
+            var productiveInvoices = new ProductiveService(_logger.Object, _connector.Object, httpClient);
+
+            var sentOn = await productiveInvoices.SentOn(invoiceId, contentSentOn);
+            
+            Assert.NotNull(sentOn);
+            _handlerMock.Protected().Verify(
+                "SendAsync",
+                Times.Once(),
+                ItExpr.Is<HttpRequestMessage>(req => req.Method == HttpMethod.Patch),
+                ItExpr.IsAny<CancellationToken>());
+        }
+        
+        private void HandlerMockSetup(HttpResponseMessage response)
+        {
+            _handlerMock
                 .Protected()
                 .Setup<Task<HttpResponseMessage>>(
                     "SendAsync",
                     ItExpr.IsAny<HttpRequestMessage>(),
                     ItExpr.IsAny<CancellationToken>())
                 .ReturnsAsync(response);
-            
-            var httpClient = new HttpClient(handlerMock.Object);
-            var productiveInvoices = new ProductiveService(_logger.Object, _connector.Object, httpClient);
-
-            var unpaidInvoiceData = await productiveInvoices.GetUnpaidInvoicesData();
-
-            Assert.NotNull(unpaidInvoiceData);
-            handlerMock.Protected().Verify(
-                "SendAsync",
-                Times.Once(),
-                ItExpr.Is<HttpRequestMessage>(req => req.Method == HttpMethod.Get),
-                ItExpr.IsAny<CancellationToken>());
         }
     }
 }

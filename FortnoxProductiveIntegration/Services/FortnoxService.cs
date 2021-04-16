@@ -121,7 +121,7 @@ namespace FortnoxProductiveIntegration.Services
                 var contentSentOn = JsonData.ContentSentOn(date);
                 var contentPayments = JsonData.ContentPayments(amount, date, invoiceIdFromSystem);
                 
-                await _productiveService.SentOn(invoiceIdFromSystem, contentSentOn);
+                var sut = await _productiveService.SentOn(invoiceIdFromSystem, contentSentOn);
                 await _productiveService.Payments(contentPayments);
                 
                 _logger.LogInformation($"(Productive) Invoice with id: ({(string)invoiceByNumber["ExternalInvoiceReference1"]}) paid on day: ({date}) with amount: ({amount})");

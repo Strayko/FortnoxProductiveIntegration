@@ -33,13 +33,13 @@ namespace FortnoxProductiveIntegration
             services.AddSingleton<IMappingService, MappingService>();
             services.AddSingleton<IConnector, Connector>();
 
-            services.AddQuartz(q =>
-            {
-                q.UseMicrosoftDependencyInjectionScopedJobFactory();
-                q.AddJobAndTrigger<FortnoxCreatingNewInvoices>(Configuration);
-                q.AddJobAndTrigger<PaidProductiveInvoices>(Configuration);
-            });
-            services.AddQuartzHostedService(q => q.WaitForJobsToComplete = true);
+            // services.AddQuartz(q =>
+            // {
+            //     q.UseMicrosoftDependencyInjectionScopedJobFactory();
+            //     q.AddJobAndTrigger<FortnoxCreatingNewInvoices>(Configuration);
+            //     q.AddJobAndTrigger<PaidProductiveInvoices>(Configuration);
+            // });
+            // services.AddQuartzHostedService(q => q.WaitForJobsToComplete = true);
             
             services.AddControllers().AddNewtonsoftJson(options =>
                 options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore);
