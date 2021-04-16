@@ -15,8 +15,8 @@ namespace FortnoxProductiveIntegration.Controllers
         private readonly ILogger<ProductiveController> _logger;
 
         public ProductiveController(
-            IProductiveService productiveService, 
-            IFortnoxService fortnoxService, 
+            IProductiveService productiveService,
+            IFortnoxService fortnoxService,
             ILogger<ProductiveController> logger)
         {
             _productiveService = productiveService;

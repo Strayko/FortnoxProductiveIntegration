@@ -31,7 +31,7 @@ namespace FortnoxProductiveIntegration.Scheduler
             {
                 await Task.Delay(10000, source.Token);
                 
-                _logger.LogInformation($"A job was started PaidProductiveInvoices at: ({DateTime.Now})");
+                _logger.LogInformation($"-----(START:PRODUCTIVE JOB) A job was started PaidProductiveInvoices at: ({DateTime.Now})-----");
                 
                 var unpaidProductiveInvoices = await _productiveService.GetUnpaidInvoicesData();
                 var productiveInvoices = unpaidProductiveInvoices["data"];
@@ -39,7 +39,7 @@ namespace FortnoxProductiveIntegration.Scheduler
             
                 _logger.LogInformation($"Number of new invoices paid: ({paidInvoices})");
                 
-                _logger.LogInformation($"A job was ended PaidProductiveInvoices at: ({DateTime.Now})");
+                _logger.LogInformation($"-----(END:PRODUCTIVE JOB) A job was ended PaidProductiveInvoices at: ({DateTime.Now})-----");
                 
             }, source.Token);
             

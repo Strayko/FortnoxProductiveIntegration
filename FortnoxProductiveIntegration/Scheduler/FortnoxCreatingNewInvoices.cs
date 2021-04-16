@@ -29,7 +29,7 @@ namespace FortnoxProductiveIntegration.Scheduler
 
             Task.Run(async delegate
             {
-                _logger.LogInformation($"A job was started FortnoxCreatingNewInvoices at: ({DateTime.Now})");
+                _logger.LogInformation($"-----(START:FORTNOX JOB) A job was started FortnoxCreatingNewInvoices at: ({DateTime.Now})-----");
             
                 var invoicesData = await _productiveService.GetUnpaidInvoicesData();
                 var dailyInvoices = _productiveService.DailyInvoicesFilter(invoicesData["data"]);
@@ -49,7 +49,7 @@ namespace FortnoxProductiveIntegration.Scheduler
                     _logger.LogInformation($"No new invoices created");
                 }
             
-                _logger.LogInformation($"A job was ended FortnoxCreatingNewInvoices at: ({DateTime.Now})");
+                _logger.LogInformation($"-----(END:FORTNOX JOB) A job was ended FortnoxCreatingNewInvoices at: ({DateTime.Now})-----");
             }, source.Token);
             
             return Task.CompletedTask;

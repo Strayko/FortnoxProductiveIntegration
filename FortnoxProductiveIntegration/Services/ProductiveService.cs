@@ -22,17 +22,10 @@ namespace FortnoxProductiveIntegration.Services
         {
             _logger = logger;
             _connector = connector;
+            
             _httpClient = httpClient;
             _httpClient.BaseAddress = new Uri("https://api.productive.io/api/v2/");
             _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-
-            // {
-            //     BaseAddress = new Uri("https://api.productive.io/api/v2/"),
-            //     DefaultRequestHeaders = 
-            //     {
-            //         Accept = { MediaTypeWithQualityHeaderValue.Parse("application/json") }
-            //     }
-            // };
         }
         
         public async Task<JObject> GetUnpaidInvoicesData()
@@ -98,7 +91,7 @@ namespace FortnoxProductiveIntegration.Services
         public async Task<JArray> NewInvoices(JToken dailyInvoices)
         {
             var invoiceConnector = _connector.FortnoxInvoice();
-            JArray newInvoices = new JArray();
+            var newInvoices = new JArray();
             foreach (var invoice in dailyInvoices)
             {
                 var invoiceSearch = new InvoiceSearch
@@ -119,7 +112,7 @@ namespace FortnoxProductiveIntegration.Services
         public JArray DailyInvoicesFilter(JToken invoicesData)
         {
             var currentDay = CurrentDay();
-            JArray dailyInvoices = new JArray();
+            var dailyInvoices = new JArray();
             foreach (var item in invoicesData)
             {
                 var dayFromInvoice = GetCurrentDaySubstring(item);
