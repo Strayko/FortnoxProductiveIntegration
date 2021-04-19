@@ -94,14 +94,16 @@ namespace FortnoxProductiveIntegration.Services
             var newInvoices = new JArray();
             foreach (var invoice in dailyInvoices)
             {
+                var invoiceNumber = (string) invoice["attributes"]?["number"];
                 var invoiceSearch = new InvoiceSearch
                 {
-                    ExternalInvoiceReference1 = (string)invoice["attributes"]?["number"]
+                    ExternalInvoiceReference1 = invoiceNumber
                 };
 
                 var invoiceEntityCollection = await invoiceConnector.FindAsync(invoiceSearch);
+                var invoiceExists = invoiceEntityCollection.Entities.Exists(p => p.ExternalInvoiceReference1 == invoiceNumber);
                 
-                if (invoiceEntityCollection?.Entities.Count == 0)
+                if (invoiceExists == false)
                     newInvoices.Add(invoice);
             }
 
