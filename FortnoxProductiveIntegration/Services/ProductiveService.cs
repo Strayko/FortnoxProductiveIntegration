@@ -30,7 +30,7 @@ namespace FortnoxProductiveIntegration.Services
         
         public async Task<JObject> GetUnpaidInvoicesData()
         {
-            var invoiceUrl = "invoices?filter[subsidiary_id]=14718&filter[status]=2";
+            var invoiceUrl = "invoices?filter[subsidiary_id]=14895&filter[status]=2";
             var httpMethod = HttpMethod.Get;
             var requestMessage = HttpRequestMessage(httpMethod, invoiceUrl, EmptyContent);
 
