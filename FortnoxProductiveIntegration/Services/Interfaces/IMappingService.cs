@@ -7,6 +7,6 @@ namespace FortnoxProductiveIntegration.Services.Interfaces
     public interface IMappingService
     {
         Customer CreateFortnoxCustomer(JObject companyJObject, CustomerConnector customerConnector);
-        InvoiceRow CreateFortnoxInvoiceRow(JToken item);
+        InvoiceRow CreateFortnoxInvoiceRow(JToken item, JToken taxValue);
     }
 }

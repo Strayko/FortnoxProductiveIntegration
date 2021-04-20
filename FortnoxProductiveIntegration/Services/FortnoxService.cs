@@ -44,6 +44,7 @@ namespace FortnoxProductiveIntegration.Services
 
         public async Task<long?> CreateInvoice(JToken invoiceJObject)
         {
+            var taxValue = invoiceJObject["attributes"]?["tax1_value"];
             var companyId = ConvertCompanyIdJTokenToString(invoiceJObject);
             
             var customerConnector = _connector.FortnoxCustomer();
@@ -55,7 +56,7 @@ namespace FortnoxProductiveIntegration.Services
             var customer = fortnoxCustomer ?? _mappingService.CreateFortnoxCustomer(productiveCompany, customerConnector);
 
             var productiveLineItem = await GetLineItems(invoiceJObject["id"]);
-            var invoiceRows = productiveLineItem.Select(item => _mappingService.CreateFortnoxInvoiceRow(item)).ToList();
+            var invoiceRows = productiveLineItem.Select(item => _mappingService.CreateFortnoxInvoiceRow(item, taxValue)).ToList();
 
             var createdAt = ConvertStringToDateTimeType(invoiceJObject["attributes"]?["created_at"]);
             var dueDate = ConvertStringToDateTimeType(invoiceJObject["attributes"]?["pay_on"]);

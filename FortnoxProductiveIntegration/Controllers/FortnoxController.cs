@@ -31,7 +31,7 @@ namespace FortnoxProductiveIntegration.Controllers
             var invoicesData = await _productiveService.GetUnpaidInvoicesData();
             var dailyInvoices = _productiveService.DailyInvoicesFilter(invoicesData["data"]);
             var newInvoices = await _productiveService.NewInvoices(dailyInvoices);
-
+            
             if (newInvoices.Count > 0)
             {
                 foreach (var invoice in newInvoices)

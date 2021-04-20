@@ -28,18 +28,21 @@ namespace FortnoxProductiveIntegration.Services
             return newCustomer;
         }
 
-        public InvoiceRow CreateFortnoxInvoiceRow(JToken item)
+        public InvoiceRow CreateFortnoxInvoiceRow(JToken item, JToken taxValue)
         {
+            var quantity = (decimal)item["attributes"]?["quantity"];
+            var deliveredQuantity = Math.Round(quantity);
+            var vat = Math.Round((decimal) taxValue);
+
             var lineItem = new InvoiceRow
             {
                 Unit = (string)item["attributes"]?["unit_id"],
                 Discount = (decimal?) (item["attributes"]?["discount"] ?? 0),
                 Price = FormatAndParseToDecimal(item["attributes"]?["amount"]),
-                VAT = 0,
+                VAT = vat,
                 Description = (string)item["attributes"]?["description"],
-                DeliveredQuantity = 1
+                DeliveredQuantity = deliveredQuantity
             };
-
             return lineItem;
         }
         
