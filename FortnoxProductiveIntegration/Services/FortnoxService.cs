@@ -117,12 +117,12 @@ namespace FortnoxProductiveIntegration.Services
                 
                 var date = (string)invoiceByNumber["FinalPayDate"];
                 var invoiceIdFromSystem = (string) invoice["id"];
-                var amount = (string) invoice["attributes"]?["amount"];
+                var amount = (string) invoice["attributes"]?["amount_with_tax"];
                 
                 var contentSentOn = JsonData.ContentSentOn(date);
                 var contentPayments = JsonData.ContentPayments(amount, date, invoiceIdFromSystem);
                 
-                var sut = await _productiveService.SentOn(invoiceIdFromSystem, contentSentOn);
+                await _productiveService.SentOn(invoiceIdFromSystem, contentSentOn);
                 await _productiveService.Payments(contentPayments);
                 
                 _logger.LogInformation($"(Productive) Invoice with id: ({(string)invoiceByNumber["ExternalInvoiceReference1"]}) paid on day: ({date}) with amount: ({amount})");
@@ -135,7 +135,7 @@ namespace FortnoxProductiveIntegration.Services
 
         private static async Task<JToken> FullyPaidInvoices()
         {
-            var path = "invoices/?filter=fullypaid";
+            var path = "invoices/?filter=fullypaid"; 
             var requestMessage = HttpRequestMessage(path);
             var responseMessage = await HttpResponseMessage(requestMessage);
 
