@@ -6,6 +6,7 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
 using Fortnox.SDK.Entities;
+using Fortnox.SDK.Search;
 using FortnoxProductiveIntegration.Connectors;
 using FortnoxProductiveIntegration.JsonFormat;
 using FortnoxProductiveIntegration.Services.Interfaces;
@@ -52,12 +53,7 @@ namespace FortnoxProductiveIntegration.Services
             
             var productiveCompany = await _productiveService.GetCompanyData(companyId);
 
-            if (string.IsNullOrEmpty((string) productiveCompany["data"]?["attributes"]?["vat"]))
-            {
-                _logger.LogInformation($"(Fortnox) Organisation Number not exists for ({productiveCompany["data"]?["attributes"]?["name"]})");
-                _logger.LogInformation($"(Fortnox) Continue a new iteration if exists ------------------>");
-                return null;
-            }
+            if (OrganisationNumberExist(productiveCompany)) return null;
             
             var fortnoxCustomer = await FortnoxCustomerExistsFilter(companyId);
 
@@ -96,6 +92,19 @@ namespace FortnoxProductiveIntegration.Services
             _logger.LogInformation($"(Fortnox) The invoice under id: ({status.DocumentNumber}) is stored");
 
             return status.DocumentNumber;
+        }
+
+        private static bool OrganisationNumberExist(JObject productiveCompany)
+        {
+            if (string.IsNullOrEmpty((string) productiveCompany["data"]?["attributes"]?["vat"]))
+            {
+                _logger.LogInformation(
+                    $"(Fortnox) Organisation Number not exists for ({productiveCompany["data"]?["attributes"]?["name"]})");
+                _logger.LogInformation("(Fortnox) Continue a new iteration if exists ------------------>");
+                return true;
+            }
+
+            return false;
         }
 
         private static JToken FindByNumberFilter(JToken fullyPaidInvoices, JToken invoice)
