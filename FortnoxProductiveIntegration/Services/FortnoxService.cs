@@ -176,7 +176,7 @@ namespace FortnoxProductiveIntegration.Services
             
             foreach (var customer in customers["Customers"])
             {
-                if ((string) customer["OrganisationNumber"] != companyId) continue;
+                if ((string) customer["Address2"] != companyId) continue;
 
                 var customerConnector = _connector.FortnoxCustomer();
                 var customerResponse =  await customerConnector.GetAsync((string) customer["CustomerNumber"]);
