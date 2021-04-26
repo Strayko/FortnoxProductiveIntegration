@@ -51,10 +51,18 @@ namespace FortnoxProductiveIntegration.Services
             var invoiceConnector = _connector.FortnoxInvoice();
             
             var productiveCompany = await _productiveService.GetCompanyData(companyId);
+
+            if (string.IsNullOrEmpty((string) productiveCompany["data"]?["attributes"]?["vat"]))
+            {
+                _logger.LogInformation($"(Fortnox) Organisation Number not exists for ({productiveCompany["data"]?["attributes"]?["name"]})");
+                _logger.LogInformation($"(Fortnox) Continue a new iteration if exists ------------------>");
+                return null;
+            }
+            
             var fortnoxCustomer = await FortnoxCustomerExistsFilter(companyId);
 
             var customer = fortnoxCustomer ?? _mappingService.CreateFortnoxCustomer(productiveCompany, customerConnector);
-
+            
             var productiveLineItem = await GetLineItems(invoiceJObject["id"]);
             var invoiceRows = productiveLineItem.Select(item => _mappingService.CreateFortnoxInvoiceRow(item, taxValue)).ToList();
 

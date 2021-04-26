@@ -1,4 +1,6 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using FortnoxProductiveIntegration.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -33,12 +35,16 @@ namespace FortnoxProductiveIntegration.Controllers
             
             if (newInvoices.Count > 0)
             {
+                var newCreatedInvoices = new List<long?>();
                 foreach (var invoice in newInvoices)
                 {
-                    await _fortnoxService.CreateInvoice(invoice);
+                    var documentNumber = await _fortnoxService.CreateInvoice(invoice);
+
+                    if (documentNumber != null)
+                        newCreatedInvoices.Add(documentNumber);
                 }
 
-                _logger.LogInformation($"Number of new invoices created: ({newInvoices.Count})");
+                _logger.LogInformation($"Number of new invoices created: ({newCreatedInvoices.Count})");
             }
             else
             {
